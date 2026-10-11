@@ -51,6 +51,27 @@
 
 ---
 
+## 🗂️ 项目结构
+
+> 界面样式集中在 `murig/ui/styles/theme.qss` 全局主题中维护：控件只负责设置
+> `objectName` / 属性，外观（配色、圆角、状态）全部由主题表描述，改主题即可换肤。
+
+```
+murig/
+├── core/      平台能力层：常量 / 环境变量写入 / 归档解包 / 工作空间 / 后台线程
+├── catalog/   组件清单、官方分发包 URL 构造、最新版本抓取
+├── ui/        界面层：theme.qss 全局主题、通用控件、对话框、主窗口
+└── app.py     应用入口（python main.py 启动）
+
+tools/
+├── smoke.py        无头冒烟测试（offscreen 构造主窗口与全部对话框）
+├── check_names.py  静态检查模块缺失的符号绑定
+├── screenshot.py   无头截图，便于人工核对视觉效果
+└── prune_imports.py 清理未使用的 import
+```
+
+---
+
 ## 📦 支持的组件
 
 > 表中为离线默认版本；启动后后台会自动向官方源抓取最新版本覆盖。大数据组件均依赖 JDK，请先安装 JDK。
