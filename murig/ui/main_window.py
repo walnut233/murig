@@ -4,14 +4,13 @@
 from __future__ import annotations
 
 import json
-from pathlib import Path
 from typing import Dict, List, Optional
 
 from PySide6.QtCore import QPoint, QSize, Qt
 from PySide6.QtGui import QCursor, QFont
 from PySide6.QtWidgets import (
-    QApplication, QDialog, QFrame, QGraphicsDropShadowEffect, QHBoxLayout,
-    QLabel, QLineEdit, QMainWindow, QPushButton, QScrollArea, QSizePolicy,
+ QDialog, QFrame, QHBoxLayout,
+    QLabel, QLineEdit, QMainWindow, QPushButton, QScrollArea,
     QSplitter, QTextEdit, QVBoxLayout, QWidget,
 )
 
@@ -24,7 +23,6 @@ from ..core.constants import (
 from ..core.workspace import WS
 from .dialogs import AboutDialog, DonateDialog, WorkspaceDialog
 from .icons import folder_icon
-from .theme import apply_theme
 from .widgets import ComponentCard
 
 
@@ -48,7 +46,6 @@ class MainWindow(QMainWindow):
         self._current_category: str = "all"
 
         self._build_ui()
-        self._apply_qss()
         self._load_settings()
         self.refresh_status_bar()
         if WS.migrated:
@@ -241,265 +238,6 @@ class MainWindow(QMainWindow):
         sb.addWidget(status_version)
         outer.addWidget(self.status_bar)
 
-    # ------------------------------------------------------------------
-    def _apply_qss(self) -> None:
-        """应用 QSS 样式表。"""
-        self.setStyleSheet(
-            """
-            #centralRoot {
-                background: qlineargradient(x1:0,y1:0,x2:0,y2:1,
-                    stop:0 #eef2f7, stop:1 #dee5ee);
-            }
-            #titleBar {
-                background: #2c3e50;
-                color: white;
-                border-top-left-radius: 8px;
-                border-top-right-radius: 8px;
-            }
-            #titleText { color: white; padding-left: 4px; }
-            #iconBtn, #donateBtn, #ctrlBtn, #closeBtn {
-                background: transparent;
-                color: white;
-                border: none;
-                padding: 6px 12px;
-                font-size: 14px;
-                border-radius: 6px;
-            }
-            #iconBtn:hover, #ctrlBtn:hover, #donateBtn:hover {
-                background: rgba(255,255,255,0.15);
-            }
-            #donateBtn { color: #ff8181; font-size: 18px; }
-            #closeBtn:hover { background: #e74c3c; }
-
-            /* ----------------- 分类筛选 / 搜索栏 ----------------- */
-            #filterBar {
-                background: rgba(255,255,255,0.75);
-                border-bottom: 1px solid #dde3ea;
-            }
-            QPushButton#categoryChip {
-                background: #ffffff;
-                color: #546e7a;
-                border: 1px solid #cfd8dc;
-                border-radius: 15px;
-                padding: 6px 14px;
-                font-size: 12px;
-            }
-            QPushButton#categoryChip:hover {
-                border-color: #90caf9;
-                color: #1976d2;
-            }
-            QPushButton#categoryChip:checked {
-                background: #1976d2;
-                color: white;
-                border-color: #1976d2;
-                font-weight: 600;
-            }
-            #searchBox {
-                background: white;
-                border: 1px solid #cfd8dc;
-                border-radius: 8px;
-                padding: 0 12px;
-                font-size: 13px;
-                color: #263238;
-            }
-            #searchBox:hover { border-color: #90caf9; }
-            #searchBox:focus { border-color: #1976d2; }
-            #sectionHeader {
-                color: #37474f;
-                font-size: 14px;
-                font-weight: 700;
-                padding: 4px 2px;
-            }
-
-            #cardsScroll { border: none; background: transparent; }
-            #cardsWrap { background: transparent; }
-            #card {
-                background: white;
-                border-radius: 12px;
-                border: 1px solid #e6ebf1;
-            }
-            #cardTitle { color: #263238; }
-            #statusLabel { font-size: 12px; }
-            #fieldLabel { color:#546e7a; font-size:13px; }
-
-            /* ----------------- 下拉框 ----------------- */
-            QComboBox {
-                padding: 0 34px 0 12px;
-                border: 1px solid #cfd8dc;
-                border-radius: 8px;
-                background: white;
-                color: #263238;
-                font-size: 13px;
-                min-height: 32px;
-                selection-background-color: #1976d2;
-            }
-            QComboBox:hover  { border-color: #90caf9; }
-            QComboBox:focus  { border-color: #1976d2; }
-            QComboBox:on     { border-color: #1976d2; }
-            QComboBox QLineEdit {
-                border: none;
-                background: transparent;
-                padding: 0;
-                margin: 0;
-                color: #263238;
-                font-size: 13px;
-                selection-background-color: #1976d2;
-                selection-color: white;
-            }
-            QComboBox QLineEdit:focus { outline: none; }
-            QComboBox::drop-down {
-                subcontrol-origin: padding;
-                subcontrol-position: center right;
-                width: 30px;
-                border: none;
-                background: transparent;
-            }
-            QComboBox::down-arrow {
-                image: none;
-                width: 0;
-                height: 0;
-            }
-            #comboArrow {
-                color: #78909c;
-                font-size: 14px;
-                background: transparent;
-                border: none;
-                padding-right: 6px;
-            }
-            QComboBox:hover #comboArrow { color: #1976d2; }
-            QComboBox:focus #comboArrow { color: #1976d2; }
-            QComboBox QAbstractItemView {
-                border: 1px solid #cfd8dc;
-                border-radius: 8px;
-                background: white;
-                padding: 6px;
-                outline: 0;
-                selection-background-color: #1976d2;
-                selection-color: white;
-            }
-            QComboBox QAbstractItemView::item {
-                padding: 8px 14px;
-                border-radius: 6px;
-                min-height: 24px;
-                color: #263238;
-            }
-            QComboBox QAbstractItemView::item:hover {
-                background: #e3f2fd;
-                color: #0d47a1;
-            }
-            QComboBox QAbstractItemView::item:selected {
-                background: #1976d2;
-                color: white;
-            }
-
-            QPushButton#primaryBtn {
-                background: #1976d2;
-                color: white;
-                border: none;
-                padding: 6px 18px;
-                border-radius: 8px;
-                font-weight: 600;
-                font-size: 13px;
-            }
-            QPushButton#primaryBtn:hover { background: #1e88e5; }
-            QPushButton#primaryBtn:pressed { background: #1565c0; }
-            QPushButton#primaryBtn:disabled { background: #b0bec5; color:#eceff1; }
-
-            QPushButton#secondaryBtn {
-                background: #ffffff;
-                color: #1976d2;
-                border: 1px solid #1976d2;
-                padding: 6px 16px;
-                border-radius: 8px;
-                font-weight: 600;
-                font-size: 13px;
-            }
-            QPushButton#secondaryBtn:hover { background: #e3f2fd; }
-            QPushButton#secondaryBtn:pressed { background: #bbdefb; }
-            QPushButton#secondaryBtn:disabled {
-                color: #b0bec5;
-                border-color: #cfd8dc;
-                background: #f5f7fa;
-            }
-
-            QPushButton#dangerBtn {
-                background: #ffffff;
-                color: #c62828;
-                border: 1px solid #c62828;
-                padding: 6px 16px;
-                border-radius: 8px;
-                font-size: 13px;
-            }
-            QPushButton#dangerBtn:hover { background: #ffebee; }
-            QPushButton#dangerBtn:disabled { color:#e0a4a4; border-color:#e0a4a4; }
-
-            QProgressBar {
-                background: #eceff1;
-                border: none;
-                border-radius: 6px;
-                height: 14px;
-                text-align: center;
-                color: #263238;
-                font-size: 11px;
-            }
-            QProgressBar::chunk {
-                border-radius: 6px;
-                background: qlineargradient(x1:0,y1:0,x2:1,y2:0,
-                    stop:0 #26c6da, stop:1 #1976d2);
-            }
-
-            #logWrap { background: transparent; }
-            #logView {
-                background: #1e1e2e;
-                color: #dcdcdc;
-                border-radius: 8px;
-                padding: 6px;
-                font-family: Menlo, Consolas, "Courier New", monospace;
-                font-size: 12px;
-            }
-            #statusBar {
-                background: #eceff1;
-                color: #455a64;
-                font-size: 12px;
-                border-bottom-left-radius: 8px;
-                border-bottom-right-radius: 8px;
-            }
-
-            QScrollBar:vertical {
-                background: transparent;
-                width: 6px;
-                margin: 3px 0;
-            }
-            QScrollBar::handle:vertical {
-                background: #e53935;
-                border-radius: 3px;
-                min-height: 24px;
-            }
-            QScrollBar::handle:vertical:hover { background: #c62828; }
-            QScrollBar::add-line:vertical, QScrollBar::sub-line:vertical { height: 0; }
-
-            QScrollBar:horizontal {
-                background: transparent;
-                height: 6px;
-                margin: 0 3px;
-            }
-            QScrollBar::handle:horizontal {
-                background: #e53935;
-                border-radius: 3px;
-                min-width: 24px;
-            }
-            QScrollBar::handle:horizontal:hover { background: #c62828; }
-            QScrollBar::add-line:horizontal, QScrollBar::sub-line:horizontal { width: 0; }
-
-            QToolTip {
-                background: #37474f;
-                color: white;
-                border: 1px solid #263238;
-                padding: 6px 10px;
-                border-radius: 6px;
-            }
-            """
-        )
 
     # ------------------------------------------------------------------
     # 无边框窗口拖动

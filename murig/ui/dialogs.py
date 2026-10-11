@@ -3,24 +3,18 @@
 
 from __future__ import annotations
 
-from pathlib import Path
-from typing import Dict, List, Optional
+from typing import Dict, List
 
-from PySide6.QtCore import QPoint, Qt, QUrl
-from PySide6.QtGui import QCursor, QDesktopServices, QFont, QPixmap
+from PySide6.QtCore import Qt, QUrl
+from PySide6.QtGui import QCursor, QDesktopServices, QPixmap
 from PySide6.QtWidgets import (
-    QApplication, QComboBox, QDialog, QFileDialog, QFrame,
-    QGraphicsDropShadowEffect, QGridLayout, QGroupBox, QHBoxLayout, QLabel,
-    QLineEdit, QPushButton, QScrollArea, QSizePolicy, QTextEdit, QVBoxLayout,
-    QWidget,
+    QApplication, QDialog, QFileDialog, QFrame, QGridLayout, QGroupBox,
+    QHBoxLayout, QLabel, QPushButton, QScrollArea, QVBoxLayout, QWidget,
 )
 
-from ..core.constants import (
-    APP_NAME, APP_VERSION, CATEGORIES, CATEGORY_ORDER, CONFIG_DIR, CURRENT_OS,
-)
+from ..core.constants import CATEGORIES, CATEGORY_ORDER, CONFIG_DIR
 from ..core.workspace import WS
 from ..resources import assets_dir
-from .icons import folder_icon
 
 
 # ---------------------------------------------------------------------------

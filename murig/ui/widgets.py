@@ -8,26 +8,19 @@ import shutil
 import subprocess
 import traceback
 from pathlib import Path, PurePosixPath
-from typing import Callable, Dict, List, Optional
+from typing import Callable, List, Optional
 from urllib.parse import urlparse
 
-from PySide6.QtCore import (
-    QEvent, QObject, QPoint, QRectF, QSize, Qt, QThread, QTimer, Signal,
-    QSortFilterProxyModel, QUrl,
-)
-from PySide6.QtGui import (
-    QAction, QColor, QCursor, QDesktopServices, QFont, QFontMetrics,
-    QIcon, QPainter, QPixmap,
-)
+from PySide6.QtCore import QEvent, QSize, Qt, Signal
+from PySide6.QtGui import QAction, QColor, QCursor, QFont, QFontMetrics
 from PySide6.QtWidgets import (
-    QApplication, QComboBox, QCompleter, QDialog, QFileDialog, QFrame,
-    QGraphicsDropShadowEffect, QGridLayout, QGroupBox, QHBoxLayout, QLabel,
-    QLineEdit, QMenu, QMessageBox, QProgressBar, QPushButton, QScrollArea,
-    QSizePolicy, QSplitter, QTextEdit, QVBoxLayout, QWidget,
+    QComboBox, QCompleter, QFileDialog, QFrame, QGraphicsDropShadowEffect,
+    QHBoxLayout, QLabel, QMenu, QMessageBox, QProgressBar, QPushButton,
+    QSizePolicy, QVBoxLayout,
 )
 
 from ..core.archive import extract_archive, extract_rpm
-from ..core.constants import CATEGORIES, CURRENT_OS
+from ..core.constants import CURRENT_OS
 from ..core.env import EnvManager
 from ..core.models import Component, ComponentVersion
 from ..core.utils import ensure_dir, human_size

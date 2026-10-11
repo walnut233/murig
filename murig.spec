@@ -16,9 +16,10 @@ from pathlib import Path
 APP_NAME = "murig"
 SPEC_DIR = Path(SPECPATH).resolve() if 'SPECPATH' in globals() else Path.cwd()
 
-# 打进包里的静态资源（打赏二维码、应用截图等）
+# 打进包里的静态资源（打赏二维码、应用截图、QSS 主题等）
 datas = [
     (str(SPEC_DIR / "assets"), "assets"),
+    (str(SPEC_DIR / "murig" / "ui" / "styles"), "murig/ui/styles"),
 ]
 
 hidden_imports = [

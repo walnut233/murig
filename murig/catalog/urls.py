@@ -3,9 +3,9 @@
 
 from __future__ import annotations
 
-from typing import Dict, Optional
+from typing import Dict
 
-from ..core.constants import CURRENT_OS, IS_ARM, MACHINE
+from ..core.constants import CURRENT_OS, IS_ARM
 from ..core.models import ComponentVersion
 
 __all__ = [
