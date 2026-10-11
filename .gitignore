@@ -147,3 +147,6 @@ secrets.json
 credentials.json
 *.pem
 *.key
+
+# 截图工具输出
+tools/shots/

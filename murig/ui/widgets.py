@@ -295,7 +295,7 @@ class ComponentCard(QFrame):
 
         # 安装位置提示行：跟随工作空间配置实时刷新
         self.dir_label = QLabel()
-        self.dir_label.setStyleSheet("color:#90a4ae;font-size:12px;")
+        self.dir_label.setObjectName("dirHint")
         root.addWidget(self.dir_label)
 
         # 底部：进度条
@@ -379,11 +379,7 @@ class ComponentCard(QFrame):
         if result.installed:
             ver = result.version_text or "未知版本"
             where = result.source or "系统"
-            self.status_label.setText(f"✓ 已配置（{where}） · {ver}")
-            self.status_label.setStyleSheet(
-                "color:#2e7d32;font-weight:600;padding:2px 8px;"
-                "background:#e8f5e9;border-radius:10px;"
-            )
+            self._set_status("ok", f"✓ 已配置（{where}） · {ver}")
             # 已可用 —— 禁用「仅配置环境变量」按钮
             self.btn_configure.setEnabled(False)
             self.btn_configure.setToolTip(
@@ -403,22 +399,26 @@ class ComponentCard(QFrame):
                 local_found = True
                 break
         if local_found:
-            self.status_label.setText("● 已下载，未配置")
-            self.status_label.setStyleSheet(
-                "color:#ef6c00;font-weight:600;padding:2px 8px;"
-                "background:#fff3e0;border-radius:10px;"
-            )
+            self._set_status("warn", "● 已下载，未配置")
             self.btn_configure.setEnabled(True)
             self.btn_configure.setToolTip("将已下载的版本写入 XXX_HOME 与 PATH")
             return
 
-        self.status_label.setText("○ 未安装")
-        self.status_label.setStyleSheet(
-            "color:#c62828;font-weight:600;padding:2px 8px;"
-            "background:#ffebee;border-radius:10px;"
-        )
+        self._set_status("idle", "○ 未安装")
         self.btn_configure.setEnabled(True)
         self.btn_configure.setToolTip("将已下载的版本写入 XXX_HOME 与 PATH")
+
+    # ------------------------------------------------------------------
+    def _set_status(self, state: str, text: str) -> None:
+        """设置状态标签文案，并切换 QSS 属性选择器对应的配色。
+
+        state: ok / warn / idle，对应 theme.qss 中的 #statusLabel[state="..."]。
+        """
+        label = self.status_label
+        label.setText(text)
+        label.setProperty("state", state)
+        label.style().unpolish(label)
+        label.style().polish(label)
 
     # ------------------------------------------------------------------
     def _display_label(self, cv: ComponentVersion) -> str:

@@ -119,8 +119,20 @@ QPushButton#categoryChip:checked {
     font-size: 14px;
     font-weight: 600;
 }
-#statusLabel { font-size: 12px; color: #6b7280; }
+#statusLabel {
+    font-size: 12px;
+    font-weight: 600;
+    padding: 3px 10px;
+    border-radius: 10px;
+    color: #6b7280;
+    background: #f1f3f8;
+}
+#statusLabel[state="ok"]   { color: #15803d; background: #e7f7ed; }
+#statusLabel[state="warn"] { color: #b45309; background: #fff5e6; }
+#statusLabel[state="idle"] { color: #b91c1c; background: #fdecec; }
+
 #fieldLabel { color: #6b7280; font-size: 12px; }
+#dirHint { color: #9aa1ad; font-size: 12px; }
 
 /* ---------------------------- 输入框 / 下拉框 ---------------------------- */
 QLineEdit {
@@ -308,3 +320,72 @@ QMenu::item:selected { background: #f0f2ff; color: #3730a3; }
 }
 QDialog QLabel { background: transparent; }
 QDialog QPushButton#primaryBtn, QDialog QPushButton#secondaryBtn { min-width: 76px; }
+
+QGroupBox {
+    background: #ffffff;
+    border: 1px solid #e6eaf2;
+    border-radius: 12px;
+    margin-top: 14px;
+    padding: 16px 12px 12px;
+    font-weight: 600;
+    color: #374151;
+}
+QGroupBox::title {
+    subcontrol-origin: margin;
+    subcontrol-position: top left;
+    left: 14px;
+    padding: 0 6px;
+}
+
+/* ---------------------------- 打赏弹窗 ---------------------------- */
+#donateTip { font-size: 13px; color: #4b5563; }
+QPushButton#channelBtn {
+    color: #ffffff;
+    border: 2px solid transparent;
+    border-radius: 10px;
+    padding: 9px 18px;
+    font-weight: 600;
+    font-size: 13px;
+}
+QPushButton#channelBtn:hover { border-color: rgba(0,0,0,0.22); }
+QPushButton#channelBtn:checked { border-color: #1f2430; }
+#channelLabel { font-size: 15px; font-weight: 600; color: #374151; }
+#qrView {
+    background: #fbfcfe;
+    border: 1px solid #e6eaf2;
+    border-radius: 14px;
+    color: #9aa1ad;
+    padding: 10px;
+}
+#donateNote { font-size: 12px; color: #9aa1ad; }
+
+/* ---------------------------- 关于我们 ---------------------------- */
+#aboutPill {
+    background: #eef0ff;
+    color: #4f46e5;
+    border: 1px solid #dcdefb;
+    border-radius: 17px;
+    font-weight: 700;
+    font-size: 13px;
+    qproperty-alignment: AlignCenter;
+}
+#aboutTitle    { font-size: 30px; font-weight: 800; color: #171b26; }
+#aboutSubtitle { font-size: 15px; color: #8a91a0; }
+#aboutHeading  { font-size: 19px; font-weight: 700; color: #1f2430; }
+#aboutText     { font-size: 14px; color: #5c6474; }
+#aboutHint     { font-size: 12px; color: #4f46e5; }
+#contactBadge {
+    border: none;
+    border-radius: 12px;
+    font-weight: 800;
+    font-size: 15px;
+    qproperty-alignment: AlignCenter;
+}
+#contactCaption { font-size: 12px; color: #9aa1ad; background: none; border: none; }
+#contactValue   { font-size: 18px; font-weight: 700; color: #1f2430; background: none; border: none; }
+
+/* ---------------------------- 工作空间 ---------------------------- */
+#dialogTip  { font-size: 13px; color: #5c6474; }
+#pathValue  { color: #1f2430; }
+#pathMuted  { color: #6b7280; }
+#pathName   { color: #1f2430; font-weight: 600; }

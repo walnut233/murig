@@ -47,7 +47,7 @@ class DonateDialog(QDialog):
 
         tip = QLabel("如果本工具对你有所帮助，欢迎请作者一杯咖啡 ☕")
         tip.setAlignment(Qt.AlignCenter)
-        tip.setStyleSheet("font-size:13px;color:#444;")
+        tip.setObjectName("donateTip")
         v.addWidget(tip)
 
         # 渠道切换按钮行
@@ -58,11 +58,9 @@ class DonateDialog(QDialog):
             btn = QPushButton(name)
             btn.setCursor(QCursor(Qt.PointingHandCursor))
             btn.setCheckable(True)
-            btn.setStyleSheet(
-                f"QPushButton{{background:{color};color:white;border:none;border-radius:8px;padding:8px 16px;font-weight:600;}}"
-                f"QPushButton:checked{{background:{color};border:2px solid #333;}}"
-                f"QPushButton:hover{{background:{color};}}"
-            )
+            btn.setObjectName("channelBtn")
+            # 仅保留动态渠道色，其余外观交给 theme.qss
+            btn.setStyleSheet(f"background:{color};")
             btn.clicked.connect(lambda _=False, n=name, c=color, f=filename: self._show_qr(n, c, f))
             row.addWidget(btn)
             self._buttons.append(btn)
@@ -71,22 +69,20 @@ class DonateDialog(QDialog):
         # 当前渠道标签
         self._channel_label = QLabel("")
         self._channel_label.setAlignment(Qt.AlignCenter)
-        self._channel_label.setStyleSheet("font-size:14px;font-weight:600;color:#333;")
+        self._channel_label.setObjectName("channelLabel")
         v.addWidget(self._channel_label)
 
         # 二维码展示区（固定尺寸，整体弹窗更紧凑）
         self.qr_view = QLabel("请选择下方渠道")
         self.qr_view.setAlignment(Qt.AlignCenter)
         self.qr_view.setFixedHeight(214)
-        self.qr_view.setStyleSheet(
-            "background:#fafafa;border:1px solid #e0e0e0;border-radius:10px;color:#888;padding:8px;"
-        )
+        self.qr_view.setObjectName("qrView")
         v.addWidget(self.qr_view, alignment=Qt.AlignHCenter)
 
         # 底部备注
         note = QLabel("扫码打赏，感谢您的支持！")
         note.setAlignment(Qt.AlignCenter)
-        note.setStyleSheet("font-size:12px;color:#999;")
+        note.setObjectName("donateNote")
         v.addWidget(note)
 
     def _show_qr(self, channel: str, color: str = "", filename: str = "") -> None:
@@ -96,9 +92,7 @@ class DonateDialog(QDialog):
 
         self._channel_label.setText(f"【{channel}】收款码")
         if color:
-            self._channel_label.setStyleSheet(
-                f"font-size:15px;font-weight:600;color:{color};"
-            )
+            self._channel_label.setStyleSheet(f"color:{color};")
 
         if not filename:
             # 兼容旧调用：仅传 channel 时按 CHANNELS 查
@@ -151,35 +145,30 @@ class AboutDialog(QDialog):
         pill = QLabel("ABOUT US")
         pill.setAlignment(Qt.AlignCenter)
         pill.setFixedSize(120, 34)
-        pill.setStyleSheet(
-            "background:#f0effd;color:#6c5ce7;border:1px solid #dcd7f9;"
-            "border-radius:17px;font-weight:700;font-size:13px;"
-        )
+        pill.setObjectName("aboutPill")
         v.addWidget(pill, alignment=Qt.AlignHCenter)
 
         title = QLabel("关于我们")
         title.setAlignment(Qt.AlignCenter)
-        title.setStyleSheet("font-size:30px;font-weight:800;color:#1a1a2e;")
+        title.setObjectName("aboutTitle")
         v.addWidget(title)
 
         subtitle = QLabel("一群因为热爱而聚在一起的开源爱好者")
         subtitle.setAlignment(Qt.AlignCenter)
-        subtitle.setStyleSheet("font-size:15px;color:#8a8a9a;")
+        subtitle.setObjectName("aboutSubtitle")
         v.addWidget(subtitle)
         v.addSpacing(8)
 
         # 介绍卡片
         card = QFrame()
         card.setObjectName("aboutCard")
-        card.setStyleSheet(
-            "#aboutCard{background:#ffffff;border:1px solid #e8e8f0;border-radius:16px;}"
-        )
+
         cl = QVBoxLayout(card)
         cl.setContentsMargins(32, 26, 32, 22)
         cl.setSpacing(14)
 
         heading = QLabel("我们致力于开源项目")
-        heading.setStyleSheet("font-size:19px;font-weight:700;color:#222;")
+        heading.setObjectName("aboutHeading")
         cl.addWidget(heading)
 
         p1 = QLabel(
@@ -187,7 +176,7 @@ class AboutDialog(QDialog):
             "希望能帮你在日常工作中少写一点重复代码、少踩一点坑。"
         )
         p1.setWordWrap(True)
-        p1.setStyleSheet("font-size:14px;color:#6b6b7b;line-height:1.6;")
+        p1.setObjectName("aboutText")
         cl.addWidget(p1)
 
         # 产品矩阵导流：点击在浏览器打开 nav.qqmu.com
@@ -199,7 +188,7 @@ class AboutDialog(QDialog):
         )
         p_nav.setWordWrap(True)
         p_nav.setCursor(QCursor(Qt.PointingHandCursor))
-        p_nav.setStyleSheet("font-size:14px;color:#6b6b7b;line-height:1.6;")
+        p_nav.setObjectName("aboutText")
         p_nav.linkActivated.connect(
             lambda url: QDesktopServices.openUrl(QUrl(url))
         )
@@ -210,7 +199,7 @@ class AboutDialog(QDialog):
             "欢迎随时通过下面的方式联系我们 —— 每一条反馈我们都会认真看："
         )
         p2.setWordWrap(True)
-        p2.setStyleSheet("font-size:14px;color:#6b6b7b;line-height:1.6;")
+        p2.setObjectName("aboutText")
         cl.addWidget(p2)
 
         # 联系方式 2x2（两行水平布局）
@@ -263,7 +252,7 @@ class AboutDialog(QDialog):
         self.hint_label = QLabel("")
         self.hint_label.setWordWrap(True)
         self.hint_label.setAlignment(Qt.AlignCenter)
-        self.hint_label.setStyleSheet("font-size:12px;color:#6c5ce7;")
+        self.hint_label.setObjectName("aboutHint")
         cl.addWidget(self.hint_label)
 
         v.addWidget(card)
@@ -280,9 +269,7 @@ class AboutDialog(QDialog):
         item = QFrame()
         item.setObjectName("contactItem")
         item.setFixedHeight(86)
-        item.setStyleSheet(
-            "#contactItem{background:#fafafd;border:1px solid #ececf4;border-radius:12px;}"
-        )
+
         h = QHBoxLayout(item)
         h.setContentsMargins(16, 12, 16, 12)
         h.setSpacing(12)
@@ -291,18 +278,16 @@ class AboutDialog(QDialog):
         badge_lbl = QLabel(badge_text)
         badge_lbl.setFixedSize(46, 46)
         badge_lbl.setAlignment(Qt.AlignCenter)
-        badge_lbl.setStyleSheet(
-            f"background:{badge_bg};color:{badge_fg};border-radius:10px;"
-            "font-weight:800;font-size:15px;border:none;"
-        )
+        badge_lbl.setObjectName("contactBadge")
+        badge_lbl.setStyleSheet(f"background:{badge_bg};color:{badge_fg};")
         h.addWidget(badge_lbl)
 
         text_col = QVBoxLayout()
         text_col.setSpacing(2)
         caption_lbl = QLabel(caption)
-        caption_lbl.setStyleSheet("font-size:12px;color:#9a9aaa;border:none;background:none;")
+        caption_lbl.setObjectName("contactCaption")
         value_lbl = QLabel(value)
-        value_lbl.setStyleSheet("font-size:18px;font-weight:700;color:#222;border:none;background:none;")
+        value_lbl.setObjectName("contactValue")
         text_col.addWidget(caption_lbl)
         text_col.addWidget(value_lbl)
         h.addLayout(text_col)
@@ -310,11 +295,7 @@ class AboutDialog(QDialog):
 
         btn = QPushButton(btn_text)
         btn.setCursor(QCursor(Qt.PointingHandCursor))
-        btn.setStyleSheet(
-            "QPushButton{background:#ffffff;color:#333;border:1px solid #dcdce6;"
-            "border-radius:8px;padding:8px 14px;font-size:13px;}"
-            "QPushButton:hover{background:#f4f3ff;border-color:#c8c4f2;color:#5b5bd6;}"
-        )
+        btn.setObjectName("secondaryBtn")
         btn.clicked.connect(on_click)
         h.addWidget(btn)
         return item
@@ -352,6 +333,7 @@ class WorkspaceDialog(QDialog):
         self._names = names or {}
         self.changed = False
         self._build_ui()
+        self.adjustSize()
 
     # ------------------------------------------------------------------
     def _build_ui(self) -> None:
@@ -364,7 +346,7 @@ class WorkspaceDialog(QDialog):
             "修改立即生效；已安装的组件保持原地不动，不会自动迁移。"
         )
         tip.setWordWrap(True)
-        tip.setStyleSheet("font-size:13px;color:#546e7a;")
+        tip.setObjectName("dialogTip")
         outer.addWidget(tip)
 
         scroll = QScrollArea()
@@ -380,7 +362,7 @@ class WorkspaceDialog(QDialog):
         g = QGridLayout(grp)
         g.setColumnStretch(1, 1)
         self._global_label = QLabel()
-        self._global_label.setStyleSheet("color:#263238;")
+        self._global_label.setObjectName("pathValue")
         g.addWidget(QLabel("所有组件"), 0, 0)
         g.addWidget(self._global_label, 0, 1)
         btn = QPushButton("浏览…")
@@ -409,7 +391,7 @@ class WorkspaceDialog(QDialog):
         for row, cat in enumerate(CATEGORY_ORDER):
             g.addWidget(QLabel(CATEGORIES[cat]), row, 0)
             lab = QLabel()
-            lab.setStyleSheet("color:#263238;")
+            lab.setObjectName("pathValue")
             self._cat_labels[cat] = lab
             g.addWidget(lab, row, 1)
             btn = QPushButton("浏览…")
@@ -480,15 +462,15 @@ class WorkspaceDialog(QDialog):
                 w.deleteLater()
         if not WS.components:
             empty = QLabel("暂无组件自定义目录。")
-            empty.setStyleSheet("color:#90a4ae;")
+            empty.setObjectName("pathMuted")
             self._override_box.addWidget(empty)
         for key, path in sorted(WS.components.items()):
             row = QHBoxLayout()
             name = QLabel(self._names.get(key, key))
-            name.setStyleSheet("color:#263238;font-weight:600;")
+            name.setObjectName("pathName")
             row.addWidget(name)
             lab = QLabel(path)
-            lab.setStyleSheet("color:#546e7a;")
+            lab.setObjectName("pathMuted")
             lab.setToolTip(path)
             row.addWidget(lab, stretch=1)
             btn = QPushButton("清除")
