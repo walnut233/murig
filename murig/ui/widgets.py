@@ -524,11 +524,11 @@ class ComponentCard(QFrame):
 
     def _refresh_more_menu(self) -> None:
         """「更多」菜单弹出前刷新各动作状态。"""
-        # 清除自定义目录：仅有覆盖时可选
-        self.act_clear_dir.setEnabled(self.component.key in WS.components)
+        has_override = self.component.key in WS.components
+        # 清除自定义目录：仅安装目录为自定义（非默认/分类）时才显示
+        self.act_clear_dir.setVisible(has_override)
         self.act_dir.setText(
-            "修改安装目录…（当前为自定义）"
-            if self.component.key in WS.components else "修改安装目录…"
+            "修改安装目录…（当前为自定义）" if has_override else "修改安装目录…"
         )
 
     def _clear_dir_override(self) -> None:
