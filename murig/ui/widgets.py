@@ -11,7 +11,7 @@ from pathlib import Path, PurePosixPath
 from typing import Callable, List, Optional
 from urllib.parse import urlparse
 
-from PySide6.QtCore import QEvent, QRectF, QSize, Qt, Signal
+from PySide6.QtCore import QEvent, QRectF, QSize, Qt, QTimer, Signal
 from PySide6.QtGui import (
     QAction, QColor, QCursor, QFont, QFontMetrics, QPainter, QPainterPath, QPen,
 )
@@ -356,12 +356,35 @@ class ComponentCard(QFrame):
         self.dir_label.setObjectName("dirHint")
         root.addWidget(self.dir_label)
 
-        # 底部：进度条
+        # 底部：进度条（仅下载/安装任务进行时显示，平时收起）
         self.progress = QProgressBar()
         self.progress.setRange(0, 100)
         self.progress.setTextVisible(True)
         self.progress.setValue(0)
+        self.progress.setVisible(False)
         root.addWidget(self.progress)
+
+    # ------------------------------------------------------------------
+    def _show_progress(self) -> None:
+        """任务开始：显示进度条。"""
+        self.progress.setVisible(True)
+
+    def _finish_progress(self, failed: bool = False) -> None:
+        """任务结束：复位并收起进度条。
+
+        成功时保留 2 秒让用户看到 100%，再自动收起；
+        期间若用户又启动了新任务（按钮处于禁用态）则不收起。
+        """
+        def _reset() -> None:
+            if self.btn_install.isEnabled():
+                self.progress.setVisible(False)
+                self.progress.setRange(0, 100)
+                self.progress.setValue(0)
+                self.progress.setFormat("%p%")
+        if failed:
+            _reset()
+        else:
+            QTimer.singleShot(2000, _reset)
 
     # ------------------------------------------------------------------
     def _log(self, level: str, msg: str) -> None:
@@ -567,6 +590,8 @@ class ComponentCard(QFrame):
         dest = download_dir / f"{self.component.key}-{cv.version}{suffix}"
 
         self.progress.setValue(0)
+        self.progress.setFormat("%p%")
+        self.progress.setVisible(True)
         self.btn_install.setEnabled(False)
         self.btn_configure.setEnabled(False)
         self.btn_cancel.setVisible(True)
@@ -593,6 +618,7 @@ class ComponentCard(QFrame):
     def _on_download_ok(self, path: Path, cv: ComponentVersion) -> None:
         self.progress.setRange(0, 100)
         self.progress.setValue(100)
+        self._finish_progress()
         self.btn_cancel.setEnabled(False)
         self.btn_cancel.setVisible(False)
 
@@ -725,6 +751,7 @@ class ComponentCard(QFrame):
         self.btn_cancel.setVisible(False)
         self.progress.setRange(0, 100)
         self.progress.setValue(0)
+        self._finish_progress(failed=True)
         if msg and msg != "用户取消":
             QMessageBox.warning(self, "下载失败", f"{self.component.display_name} 下载失败：\n{msg}")
 
@@ -749,6 +776,7 @@ class ComponentCard(QFrame):
         # 忙碌状态（npm 安装无精确进度，进度条滚动）
         self.progress.setRange(0, 0)
         self.progress.setFormat("npm 安装中…")
+        self.progress.setVisible(True)
         self.btn_install.setEnabled(False)
         self.btn_configure.setEnabled(False)
         self.btn_cancel.setVisible(True)
@@ -765,6 +793,7 @@ class ComponentCard(QFrame):
         self.progress.setRange(0, 100)
         self.progress.setValue(100)
         self.progress.setFormat("%p%")
+        self._finish_progress()
         self.btn_cancel.setEnabled(False)
         self.btn_cancel.setVisible(False)
         self._log("ok", f"npm 安装完成：{final}")
@@ -779,6 +808,7 @@ class ComponentCard(QFrame):
         self.progress.setRange(0, 100)
         self.progress.setValue(0)
         self.progress.setFormat("%p%")
+        self._finish_progress(failed=True)
         self.btn_install.setEnabled(True)
         self.btn_configure.setEnabled(True)
         self.btn_cancel.setEnabled(False)
