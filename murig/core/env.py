@@ -21,6 +21,64 @@ class EnvManager:
     def get(name: str) -> Optional[str]:
         return os.environ.get(name)
 
+    # ------------------------------------------------------------------
+    # Windows 注册表级读取：区分用户变量与系统变量。
+    # 背景：Windows 合并 PATH 时「系统在前、用户在后」，且进程拿到的是启动
+    # 时的合并快照——系统里装过的旧版本会一直压过用户新写入的版本。
+    # ------------------------------------------------------------------
+    @staticmethod
+    def user_registry_env(name: str) -> Optional[str]:
+        """读 Windows 用户环境变量（HKCU\\Environment），不存在返回 None。"""
+        if CURRENT_OS != "Windows":
+            return None
+        try:
+            import winreg  # type: ignore
+
+            with winreg.OpenKey(
+                winreg.HKEY_CURRENT_USER, "Environment", 0, winreg.KEY_READ
+            ) as key:
+                value, _reg_type = winreg.QueryValueEx(key, name)
+            if isinstance(value, str) and "%" in value:
+                value = os.path.expandvars(value)
+            return (value or None) if isinstance(value, str) else None
+        except OSError:
+            return None
+
+    @staticmethod
+    def user_path_dirs() -> list:
+        """用户 PATH 目录列表（已展开、去重、保序）。"""
+        raw = EnvManager.user_registry_env("Path") or ""
+        out: list = []
+        for p in raw.split(";"):
+            p = p.strip().strip('"')
+            if p and p.upper() not in {d.upper() for d in out}:
+                out.append(p)
+        return out
+
+    @staticmethod
+    def system_path_exec_dirs(exec_name: str) -> list:
+        """系统 PATH（HKLM）中包含该可执行文件的目录——用于提示旧版本冲突。"""
+        if CURRENT_OS != "Windows":
+            return []
+        import winreg  # type: ignore
+
+        exe = exec_name + ".exe"
+        try:
+            with winreg.OpenKey(
+                winreg.HKEY_LOCAL_MACHINE,
+                r"SYSTEM\CurrentControlSet\Control\Session Manager\Environment",
+                0, winreg.KEY_READ,
+            ) as key:
+                value, _reg_type = winreg.QueryValueEx(key, "Path")
+        except OSError:
+            return []
+        hits: list = []
+        for p in value.split(";"):
+            p = p.strip().strip('"')
+            if p and (Path(os.path.expandvars(p)) / exe).exists():
+                hits.append(p)
+        return hits
+
     @staticmethod
     def is_valid_home(path: str, exec_name: str) -> bool:
         """判断 XXX_HOME 是否有效——检查 bin 目录下是否存在可执行文件。"""

@@ -118,9 +118,12 @@ class Component:
         if not self.exec_name:
             return DetectResult(False)
 
-        # 1) 优先通过 XXX_HOME 环境变量判断
+        # 1) 优先通过 XXX_HOME 环境变量判断。
+        #    用户变量优先于系统变量：Windows 合并环境变量时「系统在前」，
+        #    系统变量里可能还留着旧版本（进程环境是启动时的合并快照），
+        #    而本工具新装的版本写入的是用户变量——直接 get 会命中旧值
         if self.env_var:
-            home = EnvManager.get(self.env_var)
+            home = EnvManager.user_registry_env(self.env_var) or EnvManager.get(self.env_var)
             if home:
                 exe = self.exec_path_in_home(home)
                 if exe is not None:
@@ -132,8 +135,25 @@ class Component:
                         version_text=_probe_version(str(exe), self.version_args, self.gui_app),
                     )
 
-        # 2) 通过 PATH 中的可执行文件
+        # 2) 通过 PATH 中的可执行文件。Windows 上先查用户 PATH（注册表
+        #    HKCU\Environment），再回退完整 PATH：否则系统 PATH 里的旧版本
+        #    会一直被 which 命中，掩盖用户新装的版本
         exe_name_final = self.exec_name + (".exe" if CURRENT_OS == "Windows" else "")
+        if CURRENT_OS == "Windows":
+            for d in EnvManager.user_path_dirs():
+                base = Path(d)
+                candidates = [base / exe_name_final]
+                if self.path_subdir:
+                    candidates.insert(0, base / self.path_subdir / exe_name_final)
+                for cand in candidates:
+                    if cand.is_file():
+                        return DetectResult(
+                            installed=True,
+                            source="PATH（用户）",
+                            exe_path=str(cand),
+                            version_text=_probe_version(
+                                str(cand), self.version_args, self.gui_app),
+                        )
         which = shutil.which(exe_name_final) or shutil.which(self.exec_name)
         if which:
             return DetectResult(

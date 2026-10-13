@@ -919,5 +919,16 @@ class ComponentCard(QFrame):
 
             if CURRENT_OS != "Windows":
                 self._log("warn", "请打开新的终端或执行 `source ~/.zshrc` 让环境变量生效。")
+            else:
+                # Windows 合并 PATH 时系统变量在前：若系统里还装着旧版本，
+                # 新开的终端会优先用旧版。这里提示用户处理
+                stale = EnvManager.system_path_exec_dirs(comp.exec_name)
+                if stale:
+                    self._log(
+                        "warn",
+                        f"系统 PATH 中仍存在 {comp.display_name}：{'、'.join(stale)}"
+                        "；新开的终端可能优先使用旧版本，建议从系统 PATH 移除旧条目"
+                        "（需管理员权限）",
+                    )
         except Exception as exc:
             self._log("error", f"环境变量配置失败：{exc}")
