@@ -42,7 +42,7 @@ QToolTip {
 }
 #titleText {
     color: #f3f5fa;
-    font-size: 13px;
+    font-size: 14px;
     font-weight: 600;
     padding-left: 2px;
 }
@@ -52,11 +52,13 @@ QToolTip {
     color: #dbe1ec;
     border: none;
     border-radius: 8px;
-    padding: 6px 12px;
     font-size: 13px;
 }
+#iconBtn { padding: 6px 12px; }
+/* 窗口控制按钮在代码里已固定尺寸，这里去掉内边距保证三个按钮完全一致 */
+#ctrlBtn, #closeBtn, #donateBtn { padding: 0; }
 #iconBtn:hover, #ctrlBtn:hover, #donateBtn:hover { background: rgba(255,255,255,0.14); color: #ffffff; }
-#donateBtn { color: #ff8f8f; font-size: 16px; }
+#donateBtn { color: #ff8f8f; }
 #closeBtn:hover { background: #e5484d; color: #ffffff; }
 
 /* ---------------------------- 筛选 / 搜索 ---------------------------- */

@@ -6,8 +6,8 @@ from __future__ import annotations
 import json
 from typing import Dict, List, Optional
 
-from PySide6.QtCore import QPoint, QSize, Qt
-from PySide6.QtGui import QCursor, QFont
+from PySide6.QtCore import QEvent, QPoint, QSize, Qt
+from PySide6.QtGui import QCursor
 from PySide6.QtWidgets import (
  QDialog, QFrame, QHBoxLayout,
     QLabel, QLineEdit, QMainWindow, QPushButton, QScrollArea,
@@ -22,7 +22,10 @@ from ..core.constants import (
 )
 from ..core.workspace import WS
 from .dialogs import AboutDialog, DonateDialog, WorkspaceDialog
-from .icons import folder_icon
+from .icons import (
+    BAR_FG, about_icon, close_icon, folder_icon, heart_icon,
+    maximize_icon, minimize_icon, refresh_icon, restore_icon,
+)
 from .widgets import ComponentCard
 
 
@@ -75,12 +78,13 @@ class MainWindow(QMainWindow):
 
         title_label = QLabel(APP_NAME)
         title_label.setObjectName("titleText")
-        title_label.setFont(QFont("", 12, QFont.Bold))
         tb.addWidget(title_label)
         tb.addStretch(1)
 
-        # 关于我们
-        self.btn_about = QPushButton("💡 关于我们")
+        # 关于我们（图标为代码绘制的线性图标，统一视觉、避免 emoji 锯齿）
+        self.btn_about = QPushButton("关于我们")
+        self.btn_about.setIcon(about_icon(15))
+        self.btn_about.setIconSize(QSize(15, 15))
         self.btn_about.setObjectName("iconBtn")
         self.btn_about.setCursor(QCursor(Qt.PointingHandCursor))
         self.btn_about.setToolTip("了解我们 & 联系方式")
@@ -88,16 +92,18 @@ class MainWindow(QMainWindow):
         tb.addWidget(self.btn_about)
 
         # 刷新版本列表按钮
-        self.btn_refresh = QPushButton("⟳ 刷新版本")
+        self.btn_refresh = QPushButton("刷新版本")
+        self.btn_refresh.setIcon(refresh_icon(15))
+        self.btn_refresh.setIconSize(QSize(15, 15))
         self.btn_refresh.setObjectName("iconBtn")
         self.btn_refresh.setCursor(QCursor(Qt.PointingHandCursor))
         self.btn_refresh.setToolTip("重新从官网抓取所有组件的可用版本列表")
         self.btn_refresh.clicked.connect(self._start_fetch_versions)
         tb.addWidget(self.btn_refresh)
 
-        # 工作空间设置（图标代码绘制，避免 emoji 缺字形显示为方格）
+        # 工作空间设置
         self.btn_workspace = QPushButton("工作空间")
-        self.btn_workspace.setIcon(folder_icon(14))
+        self.btn_workspace.setIcon(folder_icon(14, BAR_FG))
         self.btn_workspace.setIconSize(QSize(14, 14))
         self.btn_workspace.setObjectName("iconBtn")
         self.btn_workspace.setCursor(QCursor(Qt.PointingHandCursor))
@@ -105,28 +111,43 @@ class MainWindow(QMainWindow):
         self.btn_workspace.clicked.connect(self._on_workspace_clicked)
         tb.addWidget(self.btn_workspace)
 
-        # 捐赠图标（不在 README 中提及）
-        self.btn_donate = QPushButton("♥")
+        # 捐赠（不在 README 中提及）
+        self.btn_donate = QPushButton()
+        self.btn_donate.setIcon(heart_icon(16))
+        self.btn_donate.setIconSize(QSize(16, 16))
+        self.btn_donate.setFixedSize(34, 30)
         self.btn_donate.setObjectName("donateBtn")
         self.btn_donate.setCursor(QCursor(Qt.PointingHandCursor))
         self.btn_donate.setToolTip("支持作者")
         self.btn_donate.clicked.connect(self._on_donate_clicked)
         tb.addWidget(self.btn_donate)
 
-        # 窗口控制按钮
-        self.btn_min = QPushButton("—")
+        # 窗口控制按钮：统一固定尺寸 + 矢量图标，保证三者一致
+        ctrl_size = QSize(44, 30)
+        icon_size = QSize(14, 14)
+
+        self.btn_min = QPushButton()
+        self.btn_min.setIcon(minimize_icon(14))
+        self.btn_min.setIconSize(icon_size)
+        self.btn_min.setFixedSize(ctrl_size)
         self.btn_min.setObjectName("ctrlBtn")
         self.btn_min.setCursor(QCursor(Qt.PointingHandCursor))
         self.btn_min.clicked.connect(self.showMinimized)
         tb.addWidget(self.btn_min)
 
-        self.btn_max = QPushButton("▢")
+        self.btn_max = QPushButton()
+        self.btn_max.setIcon(maximize_icon(14))
+        self.btn_max.setIconSize(icon_size)
+        self.btn_max.setFixedSize(ctrl_size)
         self.btn_max.setObjectName("ctrlBtn")
         self.btn_max.setCursor(QCursor(Qt.PointingHandCursor))
         self.btn_max.clicked.connect(self._toggle_max)
         tb.addWidget(self.btn_max)
 
-        self.btn_close = QPushButton("×")
+        self.btn_close = QPushButton()
+        self.btn_close.setIcon(close_icon(14))
+        self.btn_close.setIconSize(icon_size)
+        self.btn_close.setFixedSize(ctrl_size)
         self.btn_close.setObjectName("closeBtn")
         self.btn_close.setCursor(QCursor(Qt.PointingHandCursor))
         self.btn_close.clicked.connect(self.close)
@@ -156,7 +177,7 @@ class MainWindow(QMainWindow):
 
         self.search_box = QLineEdit()
         self.search_box.setObjectName("searchBox")
-        self.search_box.setPlaceholderText("🔍 搜索软件名 / 别名 / 分类名，例如 redis、数据库、kafka、缓存…")
+        self.search_box.setPlaceholderText("搜索软件名 / 别名 / 分类名，例如 redis、数据库、kafka…")
         self.search_box.setClearButtonEnabled(True)
         self.search_box.setFixedHeight(34)
         self.search_box.textChanged.connect(self._apply_filter)
@@ -263,10 +284,16 @@ class MainWindow(QMainWindow):
     def _toggle_max(self) -> None:
         if self.isMaximized():
             self.showNormal()
-            self.btn_max.setText("▢")
         else:
             self.showMaximized()
-            self.btn_max.setText("❐")
+
+    def changeEvent(self, event) -> None:  # noqa: N802
+        """窗口最大化/还原时同步切换最大化按钮的图标。"""
+        super().changeEvent(event)
+        if event.type() == QEvent.Type.WindowStateChange and hasattr(self, "btn_max"):
+            self.btn_max.setIcon(
+                restore_icon(14) if self.isMaximized() else maximize_icon(14)
+            )
 
     # ------------------------------------------------------------------
     # 分类筛选 & 搜索
@@ -312,7 +339,7 @@ class MainWindow(QMainWindow):
 
         if hasattr(self, "btn_refresh"):
             self.btn_refresh.setEnabled(False)
-            self.btn_refresh.setText("⟳ 抓取中…")
+            self.btn_refresh.setText("抓取中…")
         self._fetch_pending = 0
         self._append_log("info", "正在从各官网获取最新版本列表…")
         for card in self.cards:
@@ -335,7 +362,7 @@ class MainWindow(QMainWindow):
         self._fetch_pending -= 1
         if self._fetch_pending <= 0 and hasattr(self, "btn_refresh"):
             self.btn_refresh.setEnabled(True)
-            self.btn_refresh.setText("⟳ 刷新版本")
+            self.btn_refresh.setText("刷新版本")
             self._append_log("info", "版本列表获取完成。")
 
     # ------------------------------------------------------------------
