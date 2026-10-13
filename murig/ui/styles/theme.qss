@@ -54,7 +54,7 @@ QToolTip {
 #titleText {
     color: #f3f5fa;
     font-size: 10.5pt;
-    font-weight: 600;
+    font-weight: 700;
     padding-left: 2px;
 }
 
@@ -94,7 +94,7 @@ QPushButton#categoryChip:checked {
     background: #4f46e5;
     color: #ffffff;
     border-color: #4f46e5;
-    font-weight: 600;
+    font-weight: 700;
 }
 
 #searchBox {
@@ -130,11 +130,11 @@ QPushButton#categoryChip:checked {
 #cardTitle {
     color: #1f2430;
     font-size: 10.5pt;
-    font-weight: 600;
+    font-weight: 700;
 }
 #statusLabel {
     font-size: 9pt;
-    font-weight: 600;
+    font-weight: 700;
     padding: 3px 10px;
     border-radius: 10px;
     color: #6b7280;
@@ -216,7 +216,7 @@ QPushButton#primaryBtn {
     border: none;
     padding: 7px 18px;
     border-radius: 10px;
-    font-weight: 600;
+    font-weight: 700;
     font-size: 10pt;
 }
 QPushButton#primaryBtn:hover { background: #4338ca; }
@@ -229,7 +229,7 @@ QPushButton#secondaryBtn {
     border: 1px solid #c7d2fe;
     padding: 6px 16px;
     border-radius: 10px;
-    font-weight: 600;
+    font-weight: 700;
     font-size: 10pt;
 }
 QPushButton#secondaryBtn:hover { background: #f0f2ff; border-color: #4f46e5; }
@@ -340,7 +340,7 @@ QGroupBox {
     border-radius: 12px;
     margin-top: 14px;
     padding: 16px 12px 12px;
-    font-weight: 600;
+    font-weight: 700;
     color: #374151;
 }
 QGroupBox::title {
@@ -357,12 +357,12 @@ QPushButton#channelBtn {
     border: 2px solid transparent;
     border-radius: 10px;
     padding: 9px 18px;
-    font-weight: 600;
+    font-weight: 700;
     font-size: 10pt;
 }
 QPushButton#channelBtn:hover { border-color: rgba(0,0,0,0.22); }
 QPushButton#channelBtn:checked { border-color: #1f2430; }
-#channelLabel { font-size: 11pt; font-weight: 600; color: #374151; }
+#channelLabel { font-size: 11pt; font-weight: 700; color: #374151; }
 #qrView {
     background: #fbfcfe;
     border: 1px solid #e6eaf2;
@@ -382,7 +382,7 @@ QPushButton#channelBtn:checked { border-color: #1f2430; }
     font-size: 10pt;
     qproperty-alignment: AlignCenter;
 }
-#aboutTitle    { font-size: 22.5pt; font-weight: 800; color: #171b26; }
+#aboutTitle    { font-size: 22.5pt; font-weight: 700; color: #171b26; }
 #aboutSubtitle { font-size: 11pt; color: #8a91a0; }
 #aboutHeading  { font-size: 14pt; font-weight: 700; color: #1f2430; }
 #aboutText     { font-size: 10.5pt; color: #5c6474; }
@@ -390,7 +390,7 @@ QPushButton#channelBtn:checked { border-color: #1f2430; }
 #contactBadge {
     border: none;
     border-radius: 12px;
-    font-weight: 800;
+    font-weight: 700;
     font-size: 11pt;
     qproperty-alignment: AlignCenter;
 }
@@ -401,4 +401,4 @@ QPushButton#channelBtn:checked { border-color: #1f2430; }
 #dialogTip  { font-size: 10pt; color: #5c6474; }
 #pathValue  { color: #1f2430; }
 #pathMuted  { color: #6b7280; }
-#pathName   { color: #1f2430; font-weight: 600; }
+#pathName   { color: #1f2430; font-weight: 700; }

@@ -13,7 +13,7 @@ from urllib.parse import urlparse
 
 from PySide6.QtCore import QEvent, QRectF, QSize, Qt, QTimer, Signal
 from PySide6.QtGui import (
-    QAction, QColor, QCursor, QFont, QFontMetrics, QPainter, QPainterPath, QPen,
+    QAction, QColor, QCursor, QFontMetrics, QPainter, QPainterPath, QPen,
 )
 from PySide6.QtWidgets import (
     QComboBox, QCompleter, QFileDialog, QFrame, QHBoxLayout, QLabel, QMenu,
@@ -301,7 +301,8 @@ class ComponentCard(QFrame):
         top.setSpacing(10)
         title = QLabel(self.component.display_name)
         title.setObjectName("cardTitle")
-        title.setFont(QFont("", 14, QFont.Bold))
+        # 注意：不要在这里 setFont —— 空家族的 QFont 会绕开全局字体策略
+        # （DirectWrite/FullHinting），小字重合成加粗还会发虚；样式交给 QSS
         top.addWidget(title)
 
         self.status_label = QLabel("检测中…")
