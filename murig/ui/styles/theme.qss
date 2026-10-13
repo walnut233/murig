@@ -14,7 +14,7 @@
 QWidget {
     font-family: "Microsoft YaHei UI", "PingFang SC", "Hiragino Sans GB",
                  "Helvetica Neue", Arial, sans-serif;
-    font-size: 13px;
+    font-size: 10pt;
     color: #1f2430;
 }
 QMainWindow, QDialog { background: #f5f7fb; }
@@ -25,20 +25,22 @@ QToolTip {
     border: 1px solid #333c52;
     padding: 6px 10px;
     border-radius: 8px;
-    font-size: 12px;
+    font-size: 9pt;
 }
 
 /* ---------------------------- 主窗口 ---------------------------- */
-/* 根容器整体圆角：配合窗口 WA_TranslucentBackground，圆角外透出桌面 */
-#centralRoot {
+/* 根容器不画背景：中部渐变画在 #contentArea 上。
+   这样回退模式（透明窗口 + QSS 圆角）下，圆角缺口处不会露出浅色背景的白边。 */
+#centralRoot { background: transparent; }
+
+#contentArea {
     background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
                 stop:0 #f7f9fc, stop:1 #e9edf5);
-    border-radius: 10px;
 }
-/* 最大化时取消圆角，避免四角出现透明缺口 */
-#centralRoot[maximized="true"],
-#titleBar[maximized="true"],
-#statusBar[maximized="true"] {
+
+/* DWM 原生圆角模式下窗口保持不透明，取消 QSS 圆角；最大化同理 */
+#centralRoot[square="true"] #titleBar,
+#centralRoot[square="true"] #statusBar {
     border-radius: 0px;
 }
 
@@ -51,7 +53,7 @@ QToolTip {
 }
 #titleText {
     color: #f3f5fa;
-    font-size: 14px;
+    font-size: 10.5pt;
     font-weight: 600;
     padding-left: 2px;
 }
@@ -61,7 +63,7 @@ QToolTip {
     color: #dbe1ec;
     border: none;
     border-radius: 8px;
-    font-size: 13px;
+    font-size: 10pt;
 }
 #iconBtn { padding: 6px 12px; }
 /* 窗口控制按钮在代码里已固定尺寸，这里去掉内边距保证三个按钮完全一致 */
@@ -81,7 +83,7 @@ QPushButton#categoryChip {
     border: 1px solid #dfe4ec;
     border-radius: 16px;
     padding: 6px 15px;
-    font-size: 12px;
+    font-size: 9pt;
 }
 QPushButton#categoryChip:hover {
     border-color: #a5b4fc;
@@ -100,7 +102,7 @@ QPushButton#categoryChip:checked {
     border: 1px solid #dfe4ec;
     border-radius: 10px;
     padding: 0 12px;
-    font-size: 13px;
+    font-size: 10pt;
     color: #1f2430;
     selection-background-color: #4f46e5;
     selection-color: #ffffff;
@@ -110,7 +112,7 @@ QPushButton#categoryChip:checked {
 
 #sectionHeader {
     color: #374151;
-    font-size: 14px;
+    font-size: 10.5pt;
     font-weight: 700;
     padding: 4px 2px;
 }
@@ -129,11 +131,11 @@ QPushButton#categoryChip:checked {
 #card:hover { border-color: #c7d2fe; border-bottom-color: #a5b4fc; }
 #cardTitle {
     color: #1f2430;
-    font-size: 14px;
+    font-size: 10.5pt;
     font-weight: 600;
 }
 #statusLabel {
-    font-size: 12px;
+    font-size: 9pt;
     font-weight: 600;
     padding: 3px 10px;
     border-radius: 10px;
@@ -144,8 +146,8 @@ QPushButton#categoryChip:checked {
 #statusLabel[state="warn"] { color: #b45309; background: #fff5e6; }
 #statusLabel[state="idle"] { color: #b91c1c; background: #fdecec; }
 
-#fieldLabel { color: #6b7280; font-size: 12px; }
-#dirHint { color: #9aa1ad; font-size: 12px; }
+#fieldLabel { color: #6b7280; font-size: 9pt; }
+#dirHint { color: #9aa1ad; font-size: 9pt; }
 
 /* ---------------------------- 输入框 / 下拉框 ---------------------------- */
 QLineEdit {
@@ -164,7 +166,7 @@ QComboBox {
     border-radius: 10px;
     background: #ffffff;
     color: #1f2430;
-    font-size: 13px;
+    font-size: 10pt;
     min-height: 34px;
 }
 QComboBox:hover { border-color: #a5b4fc; }
@@ -174,7 +176,7 @@ QComboBox QLineEdit {
     background: transparent;
     padding: 0;
     margin: 0;
-    font-size: 13px;
+    font-size: 10pt;
 }
 QComboBox::drop-down {
     subcontrol-origin: padding;
@@ -186,7 +188,7 @@ QComboBox::drop-down {
 QComboBox::down-arrow { image: none; width: 0; height: 0; }
 #comboArrow {
     color: #8b94a3;
-    font-size: 13px;
+    font-size: 10pt;
     background: transparent;
     border: none;
     padding-right: 8px;
@@ -217,7 +219,7 @@ QPushButton#primaryBtn {
     padding: 7px 18px;
     border-radius: 10px;
     font-weight: 600;
-    font-size: 13px;
+    font-size: 10pt;
 }
 QPushButton#primaryBtn:hover { background: #4338ca; }
 QPushButton#primaryBtn:pressed { background: #3730a3; }
@@ -230,7 +232,7 @@ QPushButton#secondaryBtn {
     padding: 6px 16px;
     border-radius: 10px;
     font-weight: 600;
-    font-size: 13px;
+    font-size: 10pt;
 }
 QPushButton#secondaryBtn:hover { background: #f0f2ff; border-color: #4f46e5; }
 QPushButton#secondaryBtn:pressed { background: #e0e7ff; }
@@ -242,7 +244,7 @@ QPushButton#dangerBtn {
     border: 1px solid #fca5a5;
     padding: 6px 16px;
     border-radius: 10px;
-    font-size: 13px;
+    font-size: 10pt;
 }
 QPushButton#dangerBtn:hover { background: #fef2f2; border-color: #dc2626; }
 QPushButton#dangerBtn:disabled { color: #e5b3b3; border-color: #f1d5d5; }
@@ -255,7 +257,7 @@ QProgressBar {
     height: 12px;
     text-align: center;
     color: #4b5563;
-    font-size: 11px;
+    font-size: 8pt;
 }
 QProgressBar::chunk {
     border-radius: 7px;
@@ -272,12 +274,12 @@ QProgressBar::chunk {
     border-radius: 12px;
     padding: 8px;
     font-family: Menlo, Consolas, "Cascadia Mono", "Courier New", monospace;
-    font-size: 12px;
+    font-size: 9pt;
 }
 #statusBar {
     background: #eef1f7;
     color: #6b7280;
-    font-size: 12px;
+    font-size: 9pt;
     border-top: 1px solid #e4e9f2;
     border-bottom-left-radius: 10px;
     border-bottom-right-radius: 10px;
@@ -351,18 +353,18 @@ QGroupBox::title {
 }
 
 /* ---------------------------- 打赏弹窗 ---------------------------- */
-#donateTip { font-size: 13px; color: #4b5563; }
+#donateTip { font-size: 10pt; color: #4b5563; }
 QPushButton#channelBtn {
     color: #ffffff;
     border: 2px solid transparent;
     border-radius: 10px;
     padding: 9px 18px;
     font-weight: 600;
-    font-size: 13px;
+    font-size: 10pt;
 }
 QPushButton#channelBtn:hover { border-color: rgba(0,0,0,0.22); }
 QPushButton#channelBtn:checked { border-color: #1f2430; }
-#channelLabel { font-size: 15px; font-weight: 600; color: #374151; }
+#channelLabel { font-size: 11pt; font-weight: 600; color: #374151; }
 #qrView {
     background: #fbfcfe;
     border: 1px solid #e6eaf2;
@@ -370,7 +372,7 @@ QPushButton#channelBtn:checked { border-color: #1f2430; }
     color: #9aa1ad;
     padding: 10px;
 }
-#donateNote { font-size: 12px; color: #9aa1ad; }
+#donateNote { font-size: 9pt; color: #9aa1ad; }
 
 /* ---------------------------- 关于我们 ---------------------------- */
 #aboutPill {
@@ -379,26 +381,26 @@ QPushButton#channelBtn:checked { border-color: #1f2430; }
     border: 1px solid #dcdefb;
     border-radius: 17px;
     font-weight: 700;
-    font-size: 13px;
+    font-size: 10pt;
     qproperty-alignment: AlignCenter;
 }
-#aboutTitle    { font-size: 30px; font-weight: 800; color: #171b26; }
-#aboutSubtitle { font-size: 15px; color: #8a91a0; }
-#aboutHeading  { font-size: 19px; font-weight: 700; color: #1f2430; }
-#aboutText     { font-size: 14px; color: #5c6474; }
-#aboutHint     { font-size: 12px; color: #4f46e5; }
+#aboutTitle    { font-size: 22.5pt; font-weight: 800; color: #171b26; }
+#aboutSubtitle { font-size: 11pt; color: #8a91a0; }
+#aboutHeading  { font-size: 14pt; font-weight: 700; color: #1f2430; }
+#aboutText     { font-size: 10.5pt; color: #5c6474; }
+#aboutHint     { font-size: 9pt; color: #4f46e5; }
 #contactBadge {
     border: none;
     border-radius: 12px;
     font-weight: 800;
-    font-size: 15px;
+    font-size: 11pt;
     qproperty-alignment: AlignCenter;
 }
-#contactCaption { font-size: 12px; color: #9aa1ad; background: none; border: none; }
-#contactValue   { font-size: 18px; font-weight: 700; color: #1f2430; background: none; border: none; }
+#contactCaption { font-size: 9pt; color: #9aa1ad; background: none; border: none; }
+#contactValue   { font-size: 13.5pt; font-weight: 700; color: #1f2430; background: none; border: none; }
 
 /* ---------------------------- 工作空间 ---------------------------- */
-#dialogTip  { font-size: 13px; color: #5c6474; }
+#dialogTip  { font-size: 10pt; color: #5c6474; }
 #pathValue  { color: #1f2430; }
 #pathMuted  { color: #6b7280; }
 #pathName   { color: #1f2430; font-weight: 600; }

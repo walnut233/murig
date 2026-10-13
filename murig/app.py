@@ -43,6 +43,8 @@ def _default_font() -> QFont | None:
     font.setStyleStrategy(
         QFont.StyleStrategy.PreferAntialias | QFont.StyleStrategy.PreferQuality
     )
+    # 全量 hinting：字模对齐像素网格，小字号中文笔画更实、不发虚
+    font.setHintingPreference(QFont.HintingPreference.PreferFullHinting)
     return font
 
 

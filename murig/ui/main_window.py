@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import json
+import sys
 from typing import Dict, List, Optional
 
 from PySide6.QtCore import QEvent, QPoint, QSize, Qt
@@ -29,6 +30,29 @@ from .icons import (
 from .widgets import ComponentCard
 
 
+def _enable_dwm_round_corners(win: QMainWindow) -> bool:
+    """Windows 11 (build 22000+) 上启用 DWM 原生圆角窗口，返回是否成功。
+
+    原生圆角由系统合成器裁剪，边缘干净无白边，且窗口保持不透明，
+    文字可以继续使用 ClearType 亚像素抗锯齿（透明窗口会被强制灰度）。
+    """
+    if sys.platform != "win32":
+        return False
+    try:
+        import ctypes
+
+        DWMWA_WINDOW_CORNER_PREFERENCE = 33
+        DWMWCP_ROUND = 2
+        pref = ctypes.c_int(DWMWCP_ROUND)
+        res = ctypes.windll.dwmapi.DwmSetWindowAttribute(
+            int(win.winId()), DWMWA_WINDOW_CORNER_PREFERENCE,
+            ctypes.byref(pref), ctypes.sizeof(pref),
+        )
+        return res == 0
+    except Exception:
+        return False
+
+
 # ---------------------------------------------------------------------------
 # 主窗口（无边框自定义标题栏）
 # ---------------------------------------------------------------------------
@@ -39,8 +63,11 @@ class MainWindow(QMainWindow):
         self.resize(1000, 680)
         self.setMinimumSize(880, 560)
         self.setWindowFlags(Qt.FramelessWindowHint | Qt.Window)
-        # 真透明窗口：圆角缺口处透出桌面而不是窗口白色基色（白色底边根因）
-        self.setAttribute(Qt.WA_TranslucentBackground, True)
+        # Windows 11：DWM 原生圆角 + 不透明窗口（保留 ClearType 亚像素抗锯齿）；
+        # 旧系统回退：透明窗口 + QSS 圆角（圆角处透出桌面）
+        self._native_round = _enable_dwm_round_corners(self)
+        if not self._native_round:
+            self.setAttribute(Qt.WA_TranslucentBackground, True)
 
         self.components = build_components()
         self._drag_pos: Optional[QPoint] = None
@@ -63,6 +90,8 @@ class MainWindow(QMainWindow):
     def _build_ui(self) -> None:
         central = QWidget()
         central.setObjectName("centralRoot")
+        # square=true（DWM 原生圆角或最大化）时 QSS 会取消 QSS 圆角
+        central.setProperty("square", self._native_round)
         self.setCentralWidget(central)
 
         outer = QVBoxLayout(central)
@@ -184,7 +213,14 @@ class MainWindow(QMainWindow):
         self.search_box.textChanged.connect(self._apply_filter)
         fb.addWidget(self.search_box, stretch=1)
 
-        outer.addWidget(self.filter_bar)
+        # 中部内容容器：渐变背景只画在这里（不画在 centralRoot 上）。
+        # 回退模式下圆角缺口处不会露出浅色背景的白边，缺口只透出桌面。
+        self.content_area = QFrame()
+        self.content_area.setObjectName("contentArea")
+        inner = QVBoxLayout(self.content_area)
+        inner.setContentsMargins(0, 0, 0, 0)
+        inner.setSpacing(0)
+        inner.addWidget(self.filter_bar)
 
         # ------- 主体：卡片列表 + 日志区 -------
         body = QSplitter(Qt.Vertical)
@@ -242,7 +278,8 @@ class MainWindow(QMainWindow):
 
         body.setStretchFactor(0, 3)
         body.setStretchFactor(1, 2)
-        outer.addWidget(body, stretch=1)
+        inner.addWidget(body, 1)
+        outer.addWidget(self.content_area, 1)
 
         # 底部状态条：左侧系统信息，右侧版本号
         self.status_bar = QFrame()
@@ -299,8 +336,9 @@ class MainWindow(QMainWindow):
             maximized = self.isMaximized()
             central = self.centralWidget()
             if central is not None:
+                # 最大化时取消 QSS 圆角（原生 DWM 圆角由系统自动变直角）
+                central.setProperty("square", self._native_round or maximized)
                 for w in (central, self.title_bar, self.status_bar):
-                    w.setProperty("maximized", maximized)
                     w.style().unpolish(w)
                     w.style().polish(w)
 
