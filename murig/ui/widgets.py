@@ -11,13 +11,13 @@ from pathlib import Path, PurePosixPath
 from typing import Callable, List, Optional
 from urllib.parse import urlparse
 
-from PySide6.QtCore import QEvent, QRectF, QSize, Qt, QTimer, Signal
+from PySide6.QtCore import QEvent, QRect, QRectF, QSize, Qt, QTimer, Signal
 from PySide6.QtGui import (
     QAction, QColor, QCursor, QFontMetrics, QPainter, QPainterPath, QPen,
 )
 from PySide6.QtWidgets import (
-    QComboBox, QCompleter, QFileDialog, QFrame, QHBoxLayout, QLabel, QMenu,
-    QMessageBox, QProgressBar, QPushButton, QSizePolicy, QVBoxLayout,
+    QCheckBox, QComboBox, QCompleter, QFileDialog, QFrame, QHBoxLayout, QLabel,
+    QMenu, QMessageBox, QProgressBar, QPushButton, QSizePolicy, QVBoxLayout,
 )
 
 from ..core.archive import extract_archive, extract_rpm
@@ -185,6 +185,63 @@ class SearchableComboBox(QComboBox):
         if self.count():
             self._committed_text = self.currentText()
         self._set_all_items_visible()
+
+
+# ---------------------------------------------------------------------------
+# UI 组件：滑动开关
+# ---------------------------------------------------------------------------
+class ToggleSwitch(QCheckBox):
+    """自绘滑动开关。
+
+    默认 QCheckBox 的勾选框太小、太淡，放在表单里不像可交互的选项；
+    这里画成圆角滑轨 + 圆形滑块，一眼可知可点击。状态语义与 QCheckBox
+    完全一致（toggled 信号照常使用）。
+    """
+
+    TRACK_W, TRACK_H = 40, 22
+
+    def __init__(self, text: str = "", parent=None) -> None:
+        super().__init__(text, parent)
+        self.setCursor(QCursor(Qt.PointingHandCursor))
+        self.setAttribute(Qt.WA_Hover, True)
+
+    def sizeHint(self) -> QSize:
+        fm = self.fontMetrics()
+        return QSize(
+            self.TRACK_W + 10 + fm.horizontalAdvance(self.text()) + 4,
+            max(self.TRACK_H, fm.height() + 10),
+        )
+
+    def hitButton(self, pos) -> bool:
+        return self.rect().contains(pos)
+
+    def paintEvent(self, event) -> None:
+        p = QPainter(self)
+        p.setRenderHint(QPainter.Antialiasing)
+        tw, th = self.TRACK_W, self.TRACK_H
+        y = (self.height() - th) // 2
+        hover = self.underMouse()
+        p.setPen(Qt.NoPen)
+        if self.isChecked():
+            p.setBrush(QColor("#4338ca") if hover else QColor("#4f46e5"))
+        else:
+            p.setPen(QPen(QColor("#a5b4fc" if hover else "#c7d2fe"), 1))
+            p.setBrush(QColor("#eef0ff") if hover else QColor("#ffffff"))
+        p.drawRoundedRect(QRectF(0, y, tw, th), th / 2, th / 2)
+
+        # 滑块：选中靠右、未选中靠左
+        d = th - 6
+        x = tw - d - 3 if self.isChecked() else 3
+        p.setPen(Qt.NoPen)
+        p.setBrush(QColor("#ffffff") if self.isChecked() else QColor("#94a3b8"))
+        p.drawEllipse(QRectF(x, y + 3, d, d))
+
+        # 文本
+        p.setPen(QColor("#1f2430"))
+        p.drawText(
+            QRect(tw + 10, 0, self.width() - tw - 10, self.height()),
+            Qt.AlignVCenter | Qt.AlignLeft, self.text(),
+        )
 
 
 # ---------------------------------------------------------------------------

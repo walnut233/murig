@@ -8,7 +8,7 @@ from typing import Dict, List
 from PySide6.QtCore import Qt, QUrl
 from PySide6.QtGui import QCursor, QDesktopServices, QPixmap
 from PySide6.QtWidgets import (
-    QApplication, QCheckBox, QComboBox, QDialog, QFileDialog, QFrame,
+    QApplication, QComboBox, QDialog, QFileDialog, QFrame,
     QGridLayout, QGroupBox, QHBoxLayout, QLabel, QLineEdit, QMessageBox,
     QPushButton, QScrollArea, QVBoxLayout, QWidget,
 )
@@ -20,6 +20,7 @@ from ..core.utils import human_size, open_in_file_manager
 from ..core.workers import MirrorProbeWorker
 from ..core.workspace import WS
 from ..resources import assets_dir
+from .widgets import ToggleSwitch
 
 
 class NoWheelComboBox(QComboBox):
@@ -519,13 +520,13 @@ class WorkspaceDialog(QDialog):
         grp = QGroupBox("安装选项")
         g = QGridLayout(grp)
         g.setColumnStretch(0, 1)
-        self._auto_env_box = QCheckBox("安装完成后自动配置环境变量")
+        # 滑动开关：默认复选框样式太淡，看不出是可交互的选项
+        self._auto_env_box = ToggleSwitch("安装完成后自动配置环境变量")
         self._auto_env_box.setChecked(INSTALL.auto_env)
         self._auto_env_box.setToolTip(
             "写入 XXX_HOME 与 PATH 会改动系统/用户配置；关闭时只下载解压，"
             "需要时在组件卡片点「配置环境变量」"
         )
-        self._auto_env_box.setCursor(QCursor(Qt.PointingHandCursor))
         self._auto_env_box.toggled.connect(self._on_auto_env_changed)
         g.addWidget(self._auto_env_box, 0, 0)
         v.addWidget(grp)
