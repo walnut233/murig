@@ -115,7 +115,7 @@ class AboutDialog(QDialog):
             'text-decoration:none;font-weight:600;">MuRig v1.2.0 ↗</a>'
             " 制作演变而来：沿用其组件装配与环境配置的核心能力，并在此基础上"
             "新增、修复了部分功能，让下载安装与环境配置更顺手省心。<br><br>"
-            "以下是原作者的「关于我们」内容："
+            "以下卡片内容均来自原作者（联系方式与二维码归属原作者）："
         )
         origin_text.setWordWrap(True)
         origin_text.setOpenExternalLinks(True)
@@ -126,16 +126,16 @@ class AboutDialog(QDialog):
         v.addWidget(origin)
         v.addSpacing(12)
 
-        # 介绍卡片
+        # 原作者内容卡片：弱化展示，明确这段是原作者写的
         card = QFrame()
-        card.setObjectName("aboutCard")
+        card.setObjectName("authorCard")
 
         cl = QVBoxLayout(card)
-        cl.setContentsMargins(32, 26, 32, 22)
-        cl.setSpacing(14)
+        cl.setContentsMargins(32, 22, 32, 20)
+        cl.setSpacing(12)
 
-        heading = QLabel("我们致力于开源项目")
-        heading.setObjectName("aboutHeading")
+        heading = QLabel("原作者的话 · 来自 MuRig 原项目")
+        heading.setObjectName("authorHeading")
         cl.addWidget(heading)
 
         p1 = QLabel(
@@ -143,19 +143,19 @@ class AboutDialog(QDialog):
             "希望能帮你在日常工作中少写一点重复代码、少踩一点坑。"
         )
         p1.setWordWrap(True)
-        p1.setObjectName("aboutText")
+        p1.setObjectName("authorText")
         cl.addWidget(p1)
 
         # 产品矩阵导流：点击在浏览器打开 nav.qqmu.com
         p_nav = QLabel(
             '更多开箱即用的小工具（MuOpt、MuAsk、JArgus、Jync 等），'
             '欢迎逛逛我们的产品导航：'
-            '<a href="https://nav.qqmu.com" style="color:#5b5bd6;'
+            '<a href="https://nav.qqmu.com" style="color:#8a94e8;'
             'text-decoration:none;font-weight:600;">nav.qqmu.com ↗</a>'
         )
         p_nav.setWordWrap(True)
         p_nav.setCursor(QCursor(Qt.PointingHandCursor))
-        p_nav.setObjectName("aboutText")
+        p_nav.setObjectName("authorText")
         p_nav.linkActivated.connect(
             lambda url: QDesktopServices.openUrl(QUrl(url))
         )
@@ -166,7 +166,7 @@ class AboutDialog(QDialog):
             "欢迎随时通过下面的方式联系我们 —— 每一条反馈我们都会认真看："
         )
         p2.setWordWrap(True)
-        p2.setObjectName("aboutText")
+        p2.setObjectName("authorText")
         cl.addWidget(p2)
 
         # 联系方式 2x2（两行水平布局）

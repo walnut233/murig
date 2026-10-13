@@ -386,6 +386,11 @@ QGroupBox::title {
 #contactCaption { font-size: 9pt; color: #9aa1ad; background: none; border: none; }
 #contactValue   { font-size: 13.5pt; font-weight: 700; color: #1f2430; background: none; border: none; }
 
+/* 原作者内容卡片：弱化展示（虚线灰框 + 灰阶小字），与上文区分 */
+#authorCard    { background: #fafbfd; border: 1px dashed #dbe1ec; border-radius: 14px; }
+#authorHeading { font-size: 11pt; font-weight: 700; color: #8a91a0; }
+#authorText    { font-size: 10pt; color: #9aa1ad; }
+
 /* ---------------------------- 工作空间 ---------------------------- */
 #dialogTip  { font-size: 10pt; color: #5c6474; }
 #pathValue  { color: #1f2430; }
