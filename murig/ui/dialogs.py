@@ -358,13 +358,15 @@ class WorkspaceDialog(QDialog):
     def __init__(self, parent=None, log_cb=None, names=None) -> None:
         super().__init__(parent)
         self.setWindowTitle("工作空间")
-        self.setMinimumWidth(660)
+        # 固定合理宽度：路径用省略号截断（tooltip 看全名），不再被长路径撑宽
         self.setObjectName("workspaceDialog")
         self._log_cb = log_cb
         self._names = names or {}
         self.changed = False
         self._build_ui()
-        self.adjustSize()
+        screen = QApplication.primaryScreen()
+        max_h = int(screen.availableGeometry().height() * 0.88) if screen else 860
+        self.resize(780, min(self._body.sizeHint().height() + 4, max_h))
 
     # ------------------------------------------------------------------
     def _build_ui(self) -> None:
@@ -384,6 +386,7 @@ class WorkspaceDialog(QDialog):
         scroll.setWidgetResizable(True)
         scroll.setFrameShape(QFrame.NoFrame)
         body = QWidget()
+        self._body = body
         v = QVBoxLayout(body)
         v.setContentsMargins(0, 0, 0, 0)
         v.setSpacing(14)
@@ -392,69 +395,64 @@ class WorkspaceDialog(QDialog):
         grp = QGroupBox("全局默认工作空间")
         g = QGridLayout(grp)
         g.setColumnStretch(1, 1)
+        g.setHorizontalSpacing(12)
+        name = QLabel("所有组件")
+        name.setObjectName("pathName")
+        name.setMinimumWidth(80)
+        g.addWidget(name, 0, 0)
         self._global_label = QLabel()
         self._global_label.setObjectName("pathValue")
-        g.addWidget(QLabel("所有组件"), 0, 0)
         g.addWidget(self._global_label, 0, 1)
-        btn = QPushButton("浏览…")
-        btn.setObjectName("secondaryBtn")
-        btn.setCursor(QCursor(Qt.PointingHandCursor))
-        btn.clicked.connect(lambda: self._browse(
-            "选择全局默认工作空间",
-            str(WS.global_ws or CONFIG_DIR),
-            lambda p: WS.set_global(p),
-            "全局默认工作空间",
-        ))
-        g.addWidget(btn, 0, 2)
-        btn = QPushButton("恢复默认")
-        btn.setObjectName("secondaryBtn")
-        btn.setCursor(QCursor(Qt.PointingHandCursor))
-        btn.clicked.connect(lambda: self._reset(
-            lambda: WS.set_global(None), "全局默认工作空间"))
-        g.addWidget(btn, 0, 3)
-        btn = QPushButton("打开")
-        btn.setObjectName("secondaryBtn")
-        btn.setCursor(QCursor(Qt.PointingHandCursor))
-        btn.setToolTip("在系统文件管理器中打开该目录")
-        btn.clicked.connect(
-            lambda: self._open_dir(WS.global_ws or CONFIG_DIR))
-        g.addWidget(btn, 0, 4)
+        g.addWidget(self._mini_btn(
+            "浏览", "选择目录作为全局默认工作空间",
+            lambda: self._browse(
+                "选择全局默认工作空间",
+                str(WS.global_ws or CONFIG_DIR),
+                lambda p: WS.set_global(p),
+                "全局默认工作空间",
+            )), 0, 2)
+        g.addWidget(self._mini_btn(
+            "重置", "恢复为内置默认目录",
+            lambda: self._reset(
+                lambda: WS.set_global(None), "全局默认工作空间")), 0, 3)
+        g.addWidget(self._mini_btn(
+            "打开", "在系统文件管理器中打开该目录",
+            lambda: self._open_dir(WS.global_ws or CONFIG_DIR)), 0, 4)
         v.addWidget(grp)
 
         # 分类工作空间
         grp = QGroupBox("分类工作空间（留空表示跟随全局）")
         g = QGridLayout(grp)
         g.setColumnStretch(1, 1)
+        g.setHorizontalSpacing(12)
+        g.setVerticalSpacing(10)
         self._cat_labels: Dict[str, QLabel] = {}
         for row, cat in enumerate(CATEGORY_ORDER):
-            g.addWidget(QLabel(CATEGORIES[cat]), row, 0)
+            name = QLabel(CATEGORIES[cat])
+            name.setObjectName("pathName")
+            name.setMinimumWidth(80)
+            g.addWidget(name, row, 0)
             lab = QLabel()
             lab.setObjectName("pathValue")
             self._cat_labels[cat] = lab
             g.addWidget(lab, row, 1)
-            btn = QPushButton("浏览…")
-            btn.setObjectName("secondaryBtn")
-            btn.setCursor(QCursor(Qt.PointingHandCursor))
-            btn.clicked.connect(lambda _=False, c=cat: self._browse(
-                f"选择「{CATEGORIES[c]}」的工作空间",
-                str(WS.categories.get(c) or WS.global_ws or CONFIG_DIR),
-                lambda p, c=c: WS.set_category(c, p),
-                f"分类「{CATEGORIES[c]}」工作空间",
-            ))
-            g.addWidget(btn, row, 2)
-            btn = QPushButton("跟随全局")
-            btn.setObjectName("secondaryBtn")
-            btn.setCursor(QCursor(Qt.PointingHandCursor))
-            btn.clicked.connect(lambda _=False, c=cat: self._reset(
-                lambda c=c: WS.set_category(c, None), f"分类「{CATEGORIES[c]}」工作空间"))
-            g.addWidget(btn, row, 3)
-            btn = QPushButton("打开")
-            btn.setObjectName("secondaryBtn")
-            btn.setCursor(QCursor(Qt.PointingHandCursor))
-            btn.setToolTip("在系统文件管理器中打开该目录")
-            btn.clicked.connect(lambda _=False, c=cat: self._open_dir(
-                WS.categories.get(c) or WS.global_ws or CONFIG_DIR))
-            g.addWidget(btn, row, 4)
+            g.addWidget(self._mini_btn(
+                "浏览", f"选择「{CATEGORIES[cat]}」的工作空间目录",
+                lambda c=cat: self._browse(
+                    f"选择「{CATEGORIES[c]}」的工作空间",
+                    str(WS.categories.get(c) or WS.global_ws or CONFIG_DIR),
+                    lambda p, c=c: WS.set_category(c, p),
+                    f"分类「{CATEGORIES[c]}」工作空间",
+                )), row, 2)
+            g.addWidget(self._mini_btn(
+                "重置", "清除该分类设置，跟随全局",
+                lambda c=cat: self._reset(
+                    lambda c=c: WS.set_category(c, None),
+                    f"分类「{CATEGORIES[c]}」工作空间")), row, 3)
+            g.addWidget(self._mini_btn(
+                "打开", "在系统文件管理器中打开该目录",
+                lambda c=cat: self._open_dir(
+                    WS.categories.get(c) or WS.global_ws or CONFIG_DIR)), row, 4)
         v.addWidget(grp)
 
         # 组件自定义覆盖
@@ -537,6 +535,29 @@ class WorkspaceDialog(QDialog):
         outer.addWidget(btn, alignment=Qt.AlignRight)
 
         self._refresh()
+
+    # ------------------------------------------------------------------
+    @staticmethod
+    def _elide_mid(text: str, limit: int = 42) -> str:
+        """路径过长时中间省略，保住盘符与末级目录名。"""
+        if len(text) <= limit:
+            return text
+        head = (limit - 1) // 2
+        tail = limit - 1 - head
+        return f"{text[:head]}…{text[len(text) - tail:]}"
+
+    def _mini_btn(self, text: str, tip: str, cb) -> QPushButton:
+        """紧凑的小按钮（浏览/重置/打开），避免行内按钮过宽挤爆布局。"""
+        btn = QPushButton(text)
+        btn.setObjectName("secondaryBtn")
+        btn.setCursor(QCursor(Qt.PointingHandCursor))
+        btn.setToolTip(tip)
+        btn.clicked.connect(cb)
+        return btn
+
+    def _set_path(self, label: QLabel, text: str) -> None:
+        label.setText(self._elide_mid(text))
+        label.setToolTip(text)
 
     # ------------------------------------------------------------------
     def _browse(self, title: str, current: str, apply_cb, what: str) -> None:
@@ -649,9 +670,10 @@ class WorkspaceDialog(QDialog):
 
     # ------------------------------------------------------------------
     def _refresh(self) -> None:
-        self._global_label.setText(WS.global_ws or f"内置默认（{CONFIG_DIR}）")
+        self._set_path(self._global_label,
+                       WS.global_ws or f"内置默认（{CONFIG_DIR}）")
         for cat, lab in self._cat_labels.items():
-            lab.setText(WS.categories.get(cat) or "跟随全局")
+            self._set_path(lab, WS.categories.get(cat) or "跟随全局")
         # 重建覆盖清单
         while self._override_box.count():
             item = self._override_box.takeAt(0)
@@ -667,7 +689,7 @@ class WorkspaceDialog(QDialog):
             name = QLabel(self._names.get(key, key))
             name.setObjectName("pathName")
             row.addWidget(name)
-            lab = QLabel(path)
+            lab = QLabel(self._elide_mid(path))
             lab.setObjectName("pathMuted")
             lab.setToolTip(path)
             row.addWidget(lab, stretch=1)

@@ -332,12 +332,20 @@ QMenu::item:selected { background: #f0f2ff; color: #3730a3; }
 }
 QDialog QLabel { background: transparent; }
 QDialog QPushButton#primaryBtn, QDialog QPushButton#secondaryBtn { min-width: 76px; }
+/* 带滚动容器的对话框：内容层背景与对话框一致，避免出现灰白条带 */
+#workspaceDialog QScrollArea, #aboutDialog QScrollArea,
+#workspaceDialog QScrollArea > QWidget > QWidget,
+#aboutDialog QScrollArea > QWidget > QWidget {
+    background: transparent;
+    border: none;
+}
 
 QGroupBox {
     background: #ffffff;
     border: 1px solid #e6eaf2;
     border-radius: 12px;
-    margin-top: 14px;
+    /* margin-top 必须大于标题行高，否则标题文字压进卡片圆角边框 */
+    margin-top: 26px;
     padding: 16px 12px 12px;
     font-weight: 700;
     color: #374151;
@@ -346,6 +354,7 @@ QGroupBox::title {
     subcontrol-origin: margin;
     subcontrol-position: top left;
     left: 14px;
+    top: 2px;
     padding: 0 6px;
 }
 
