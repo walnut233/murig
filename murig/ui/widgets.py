@@ -28,7 +28,6 @@ from ..core.models import Component, ComponentVersion
 from ..core.utils import ensure_dir, human_size
 from ..core.workers import CommandWorker, DownloadWorker
 from ..core.workspace import WS
-from .icons import settings_icon
 
 
 # ---------------------------------------------------------------------------
@@ -404,8 +403,6 @@ class ComponentCard(QFrame):
         self.btn_more.setObjectName("secondaryBtn")
         self.btn_more.setCursor(QCursor(Qt.PointingHandCursor))
         self.btn_more.setFixedHeight(34)
-        self.btn_more.setIcon(settings_icon(14))
-        self.btn_more.setIconSize(QSize(14, 14))
         self.btn_more.setToolTip("仅下载、配置环境变量、修改安装目录等更多操作")
         mid.addWidget(self.btn_more)
 
