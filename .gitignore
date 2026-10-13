@@ -150,3 +150,6 @@ credentials.json
 
 # 截图工具输出
 tools/shots/
+
+# codegraph目录
+.codegraph
