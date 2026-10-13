@@ -14,14 +14,37 @@
   <img src="https://img.shields.io/badge/platform-Windows%20%7C%20macOS%20%7C%20Linux-lightgrey.svg" alt="platform"/>
   <img src="https://img.shields.io/badge/license-MIT-green.svg" alt="license"/>
   <img src="https://img.shields.io/badge/GUI-PySide6-brightgreen.svg" alt="pyside6"/>
-  <a href="https://github.com/vfaner/murig/releases"><img src="https://img.shields.io/github/v/release/vfaner/murig?color=orange" alt="release"/></a>
+  <img src="https://img.shields.io/badge/based%20on-MuRig%20v1.2.0-orange" alt="based-on"/>
 </p>
+
+---
+
+## 🧬 关于本项目（二次开发）
+
+> **本项目基于开源项目 [MuRig](https://github.com/vfaner/murig) 的 v1.2.0 版本制作演变而来。**
+
+原项目由 [沐编程](https://nav.qqmu.com) 开源（MIT 协议），已实现"下载 → 解压 → 环境变量配置"的完整链路。本仓库在其 v1.2.0 基础上进行二次开发：沿用原有核心能力，**新增并修复了部分功能，让日常使用更顺手**，同时保留原作者的署名与授权。
+
+应用内 **「关于我们」** 弹窗同样标注了这段溯源信息（顶部展示应用图标与项目溯源说明，原作者的"关于我们"内容以弱化卡片形式保留）。
+
+### ✨ 相对 MuRig v1.2.0 的改动
+
+| 类别 | 改动 |
+|------|------|
+| 🆕 新增 | **一键打开工作目录**：标题栏「打开目录」按钮，用系统文件管理器（资源管理器 / Finder / 桌面文件管理器）打开当前工作空间；设置弹窗里全局与每个分类也各有「打开」 |
+| 🆕 新增 | **安装包清理**：组件解压安装完成后自动清理下载的压缩包；设置弹窗「安装包清理」还可一键清掉所有工作空间 `downloads` 目录里的残留包 |
+| 🆕 新增 | **旧版本冲突提示**：写入环境变量后若系统 PATH 里仍存在同名旧版本，弹窗列出旧版本目录，并可**以管理员权限**一键打开系统环境变量窗口（UAC 提权） |
+| 🔧 优化 | **「工作空间」弹窗升级为「设置」**：汇聚安装目录、下载通道与测速、安装选项、安装包清理；顶栏按钮同步改名并换成齿轮图标 |
+| 🔧 优化 | **安装选项改为滑动开关**：原复选框太小太淡、看不出可交互，改为自绘开关（选中紫色填充 + 悬停反馈） |
+| 🔧 优化 | **界面图标统一**：关于 / 刷新 / 设置 / 目录按钮改用统一的 SVG 图标包（`assets/icons`），按调用处注入填充色 |
+| 🔧 优化 | **关于我们**：新增应用图标与项目溯源；顶栏「支持作者」弹窗合并进「关于我们」（本版本已移除该打赏区块与二维码资源，相关内容回归原项目） |
+| 🐛 修复 | 环境变量窗口此前以普通权限打开，系统变量只读且无提权提示；改为 `ShellExecute(runas)` 提权启动 |
 
 ---
 
 ## 📥 下载即用（推荐）
 
-> **不需要 Python 环境，不需要克隆源码，双击即可运行。** 到 **[Releases 页面](https://github.com/vfaner/murig/releases/latest)** 下载对应系统的版本：
+> **不需要 Python 环境，不需要克隆源码，双击即可运行。** 到 **[原项目 Releases 页面](https://github.com/vfaner/murig/releases/latest)** 下载对应系统的版本：
 
 | 系统 | 下载文件 | 说明 |
 |------|----------|------|
@@ -29,6 +52,8 @@
 | 🍎 **macOS (Apple Silicon)** | [`murig-macos-arm64.zip`](https://github.com/vfaner/murig/releases/latest/download/murig-macos-arm64.zip) | 解压后双击 `murig.app` |
 | 🍎 **macOS (Intel 芯片)** | [`murig-macos-x64.zip`](https://github.com/vfaner/murig/releases/latest/download/murig-macos-x64.zip) | 解压后双击 `murig.app` |
 | 🐧 **Linux (x64)** | [`murig-linux-x64`](https://github.com/vfaner/murig/releases/latest/download/murig-linux-x64) | `chmod +x` 后直接运行 |
+
+> 上表为原项目的发布产物；使用本二次开发版本请直接克隆本仓库运行源码，或用 PyInstaller 自行打包（见「自定义与打包」章节）。
 
 首次启动提示：
 
@@ -45,7 +70,8 @@
 - 🌐 **动态版本**：后台向各官方 API / 归档拉取最新版本列表，下拉框可键入过滤；抓取失败自动回退内置清单，离线可用
 - 🔍 **智能检测**：依次检查 `XXX_HOME` → `PATH` → 常见安装路径，已配置的组件显示 ✓ 且不会重复写入
 - 🛠️ **环境变量写入**：Windows 走 `winreg` 直写注册表（规避 `setx` 1024 字符限制）；macOS/Linux 向 shell 配置写入带 marker 的幂等块
-- 📁 **可配置工作空间**：全局 / 分类 / 单组件三级安装目录，见 [配置工作空间](#-配置工作空间安装目录)
+- ⚙️ **设置中心**：安装目录（全局 / 分类 / 单组件三级）+ 下载通道与测速 + 安装选项 + 安装包清理，见下方「设置」章节
+- 📂 **打开目录 / 自动清理**：随时打开工作空间目录；组件解压安装后自动清理下载的安装包
 - 🎨 **现代化 UI**：无边框窗口、圆角卡片、渐变进度条、四色分级日志
 - 🧠 **偏好记忆**：记住每个组件上次选择的版本，下次启动自动恢复
 
@@ -61,6 +87,7 @@ murig/
 ├── core/      平台能力层：常量 / 环境变量写入 / 归档解包 / 工作空间 / 后台线程
 ├── catalog/   组件清单、官方分发包 URL 构造、最新版本抓取
 ├── ui/        界面层：theme.qss 全局主题、通用控件、对话框、主窗口
+│   └── icons.py   渲染 assets/icons/*.svg 并注入填充色（窗口控制按钮仍自绘）
 └── app.py     应用入口（python main.py 启动）
 
 tools/
@@ -147,8 +174,13 @@ tools/
 </p>
 
 <p align="center">
+  <img src="assets/murig_work.png" alt="设置弹窗" width="760"/><br/>
+  <sub>设置弹窗：安装目录 / 下载通道 / 安装选项 / 安装包清理</sub>
+</p>
+
+<p align="center">
   <img src="assets/murig_about.png" alt="关于我们" width="760"/><br/>
-  <sub>关于我们：联系方式与产品导航</sub>
+  <sub>关于我们：项目溯源（基于 MuRig v1.2.0）与原作者联系方式</sub>
 </p>
 
 ---
@@ -156,7 +188,7 @@ tools/
 ## 🚀 快速开始（源码运行）
 
 ```bash
-git clone https://github.com/vfaner/murig.git
+git clone <本仓库地址>
 cd murig
 pip install -r requirements.txt   # PySide6 + requests
 python main.py
@@ -170,7 +202,7 @@ python main.py
 ```
 ~/.env-tools/              # 可在「设置」改到任意盘
 ├── jdk/
-│   ├── downloads/         # 原始压缩包
+│   ├── downloads/         # 原始压缩包（解压安装后自动清理）
 │   └── jdk-17/            # 解压后的组件
 ├── maven/
 └── ...
@@ -182,26 +214,34 @@ python main.py
 
 1. **筛选（可选）**：点击分类胶囊，或在搜索框输入软件名 / 别名 / 分类名
 2. **选择版本**：下拉框点选，或键入关键字（`21`、`3.12`、`LTS`）实时过滤
-3. **下载并安装**：流式下载（可取消）→ 解压（源码包自动编译）→ 写入 `XXX_HOME` 并把 `bin` 追加到 `PATH`
+3. **下载并安装**：流式下载（可取消）→ 解压（源码包自动编译）→ 写入 `XXX_HOME` 并把 `bin` 追加到 `PATH` → 自动清理下载的安装包
 4. **配置环境变量**：本地已下载的组件只执行环境变量配置
 5. **查看日志**：底部日志区四色分级显示每一步执行情况
 
 环境变量生效：Windows 新开终端即可；macOS/Linux 执行 `source ~/.zshrc`（或重开终端）。验证：`java -version`、`mvn -v`、`python --version`、`node -v`、`mysql --version`。
 
+> ⚠️ Windows 若系统 PATH 中已装过同名旧版本，新开终端可能仍优先命中旧版（系统变量排在用户变量之前）。此时安装结束会弹窗提示旧版本所在目录，可点击「以管理员打开环境变量设置」移除旧条目。
+
 ---
 
-## 🔧 配置工作空间（安装目录）
+## ⚙️ 设置（安装目录 / 下载通道 / 安装选项）
 
-组件默认装到内置目录 `~/.env-tools/`（Windows 下即 C 盘）。点击标题栏 **「设置」** 按钮打开设置弹窗，安装位置解析优先级：
+点击标题栏 **「设置」** 按钮打开设置弹窗。
+
+**安装目录**解析优先级：
 
 1. **组件自定义**：组件卡片上的文件夹图标按钮单独指定（右键该按钮可清除）；
 2. **分类工作空间**：为六大分类分别指定目录；
 3. **全局默认**：一键修改所有组件的安装位置；
 4. 均未设置时回退内置默认 `~/.env-tools/`。
 
-<p align="center">
-  <img src="assets/murig_work.png" alt="设置弹窗" width="760"/>
-</p>
+每行右侧都有 **「打开」** 按钮，直接在该目录里查看实际落盘位置；标题栏「打开目录」则打开当前全局工作空间。
+
+**下载通道 / 安装选项 / 清理**：
+
+- **下载通道**：内置通道与自定义前缀切换，可「测速」挑选最快的镜像，支持分段并发下载；
+- **安装选项**：「安装完成后自动配置环境变量」滑动开关，关闭后只下载解压，需要时再在卡片上点「配置环境变量」；
+- **安装包清理**：一键删除所有工作空间 `downloads` 目录里的压缩包（已安装组件不受影响）。
 
 说明：
 
@@ -214,8 +254,9 @@ python main.py
 
 ## 🛠️ 自定义与打包
 
-- **新增组件 / 版本**：编辑 `main.py` 的 `build_components()`；版本列表只是离线默认，启动后会被官方源抓取结果覆盖
-- **更换镜像**：把 URL 前缀替换为华为云 `repo.huaweicloud.com`、清华 TUNA `mirrors.tuna.tsinghua.edu.cn` 或阿里云 `mirrors.aliyun.com`
+- **新增组件 / 版本**：编辑 `murig/catalog/registry.py` 的组件清单与 `murig/catalog/urls.py` 的 URL 构造；版本列表只是离线默认，启动后会被官方源抓取结果覆盖
+- **更换镜像**：设置弹窗里直接选通道或填自定义前缀（华为云 `repo.huaweicloud.com`、清华 TUNA `mirrors.tuna.tsinghua.edu.cn`、阿里云 `mirrors.aliyun.com`）
+- **更换图标**：替换 `assets/icons/*.svg`（关于 / 刷新 / 设置 / 文件夹），`murig/ui/icons.py` 会自动注入填充色
 - **本地打包**：`pip install pyinstaller && pyinstaller murig.spec --noconfirm --clean`
 - **自动发布**：推 tag（如 `git tag v1.2.0 && git push origin v1.2.0`），GitHub Actions 在 Windows / macOS (arm64 + x64) / Linux 上打包并自动创建 Release
 
@@ -223,9 +264,13 @@ python main.py
 
 ## ❓ 常见问题（FAQ）
 
-**版本抓取失败 / 下载卡住？** 抓取失败自动回退内置版本列表，功能不受影响；下载卡住点「取消」重试，或按上文更换镜像。
+**版本抓取失败 / 下载卡住？** 抓取失败自动回退内置版本列表，功能不受影响；下载卡住点「取消」重试，或到设置里换通道 / 测速。
 
 **环境变量写入失败 / 会覆盖旧值吗？** Windows 默认写用户级变量，通常无需管理员权限，失败时以管理员身份重跑。重复安装会用最新路径覆盖 `XXX_HOME`，`PATH` 只追加不重复。
+
+**新装了版本但终端里还是旧的？** 多为系统 PATH 里残留旧版本。安装结束时的提示弹窗会列出旧目录，点「以管理员打开环境变量设置」移除即可。
+
+**下载的安装包去哪了？** 组件解压安装完成后会自动清理；未自动清理的（如仅下载模式）可在设置弹窗「安装包清理」一键删除。
 
 **MySQL 解压后能直接用吗？** 不能，还需自行 `mysqld --initialize`；本工具只负责下载 + 解压 + 环境变量。
 
@@ -241,55 +286,35 @@ python main.py
 
 ```
 murig/
-├── main.py                             # 主程序（UI + 全部逻辑）
+├── main.py                             # 程序入口
 ├── requirements.txt                    # 依赖清单
 ├── murig.spec                          # PyInstaller 打包配置
 ├── README.md / README_EN.md            # 中文 / 英文说明
 ├── LICENSE                             # MIT 许可证
 ├── .github/workflows/
 │   └── build-and-release.yml           # 四产物自动构建 + 发布
-└── assets/                             # 截图与打赏码
+└── assets/                             # 截图与界面图标
+    ├── icons/                          # 界面 SVG 图标（info-circle / reload / setting / folder）
+    ├── icon.ico                        # 应用图标（窗口 / 任务栏 / exe）
     ├── murig.png                       # 主界面截图
     ├── murig_db_version.png            # 版本下拉框截图
     ├── murig_work.png                  # 设置弹窗截图
-    ├── murig_about.png                 # 关于我们截图
-    └── wechat.png / alipay.png / qq.png
+    └── murig_about.png                 # 关于我们截图
 ```
 
 ---
 
-## 💖 支持作者
+## 📄 许可证与署名
 
-如果这个小工具对你有帮助，欢迎请作者喝杯咖啡 ☕：
+- 本仓库为 **二次开发版本**，基于 [MuRig v1.2.0](https://github.com/vfaner/murig) 制作演变而来；
+- 原项目版权所有 © 2026 [**沐编程**](https://nav.qqmu.com)，以 **MIT License** 开源，本仓库沿用该协议并保留原作者署名；
+- 完整条款见 [LICENSE](LICENSE)。
 
-<table>
-  <tr>
-    <td align="center">
-      <img src="assets/wechat.png" alt="微信" width="200"/><br/>
-      <b>微信</b>
-    </td>
-    <td align="center">
-      <img src="assets/alipay.png" alt="支付宝" width="200"/><br/>
-      <b>支付宝</b>
-    </td>
-    <td align="center">
-      <img src="assets/qq.png" alt="QQ" width="200"/><br/>
-      <b>QQ</b>
-    </td>
-  </tr>
-</table>
-
-也欢迎 ⭐ Star、🐛 提 Issue、🔀 提 PR。
-
----
-
-## 📄 许可证
-
-本项目基于 **MIT License** 开源，版权所有 © 2026 [**沐编程**](https://nav.qqmu.com)。完整条款见 [LICENSE](LICENSE)。
+欢迎 ⭐ Star、🐛 提 Issue、🔀 提 PR。
 
 ---
 
 <p align="center">
-  Made with ❤️ by <b><a href="https://nav.qqmu.com">沐编程</a></b><br/>
-  <sub>如果觉得有用，别忘了给个 ⭐ Star！</sub>
+  Original by <b><a href="https://nav.qqmu.com">沐编程</a></b> · Made with ❤️<br/>
+  <sub>本仓库基于 MuRig v1.2.0 二次开发 —— 如果觉得有用，别忘了给原项目也点个 ⭐ Star！</sub>
 </p>
