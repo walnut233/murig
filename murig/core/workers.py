@@ -44,6 +44,11 @@ class DownloadWorker(QThread):
             with requests.get(self.url, stream=True, timeout=30, allow_redirects=True,
                               headers=self.headers) as r:
                 r.raise_for_status()
+                # 响应阶段也可能收到取消（下载循环开始前只有这里能响应）
+                if self._cancel:
+                    self.log.emit("warn", "已取消下载。")
+                    self.finished_fail.emit("用户取消")
+                    return
                 total = int(r.headers.get("Content-Length", 0))
                 downloaded = 0
                 tmp = self.dest.with_suffix(self.dest.suffix + ".part")

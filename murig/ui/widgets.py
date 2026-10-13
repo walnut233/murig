@@ -211,9 +211,27 @@ class ComponentCard(QFrame):
         # 因为 QSS 的圆角边框不做抗锯齿，1px 逻辑边框在 150% 缩放下还会
         # 变成 1.5 物理像素，圆角处锯齿非常明显。
         self._hovered = False
+        # 任务代号：每次启动新任务 +1；信号回调携带启动时的代号，
+        # 不匹配即为已取消/被替代的旧任务的迟到信号，直接忽略
+        self._task_epoch = 0
 
         self._build_ui()
         self._detect_status()
+
+    # ------------------------------------------------------------------
+    def _busy(self) -> bool:
+        """是否有下载/命令任务正在运行（以线程真实状态为准）。"""
+        return bool(
+            (self.worker and self.worker.isRunning())
+            or (self.cmd_worker and self.cmd_worker.isRunning())
+        )
+
+    def _reset_progress(self) -> None:
+        """复位并收起进度条。"""
+        self.progress.setVisible(False)
+        self.progress.setRange(0, 100)
+        self.progress.setValue(0)
+        self.progress.setFormat("%p%")
 
     # ------------------------------------------------------------------
     # 自绘卡片外观（替代 QSS 边框，圆角平滑无锯齿）
@@ -373,14 +391,11 @@ class ComponentCard(QFrame):
         """任务结束：复位并收起进度条。
 
         成功时保留 2 秒让用户看到 100%，再自动收起；
-        期间若用户又启动了新任务（按钮处于禁用态）则不收起。
+        期间若用户又启动了新任务则不收起。
         """
         def _reset() -> None:
-            if self.btn_install.isEnabled():
-                self.progress.setVisible(False)
-                self.progress.setRange(0, 100)
-                self.progress.setValue(0)
-                self.progress.setFormat("%p%")
+            if not self._busy():
+                self._reset_progress()
         if failed:
             _reset()
         else:
@@ -597,11 +612,22 @@ class ComponentCard(QFrame):
         self.btn_cancel.setVisible(True)
         self.btn_cancel.setEnabled(True)
 
+        # 任务代号守卫：取消/重开后，旧任务的迟到信号（progress/fail）直接丢弃，
+        # 防止把已复位的进度条又改回旧值（"进度缓存"残留的根因）
+        self._task_epoch += 1
+        epoch = self._task_epoch
+
         self.worker = DownloadWorker(url, dest, self.component.download_headers)
-        self.worker.progress.connect(self._on_progress)
+        self.worker.progress.connect(
+            lambda d, t, e=epoch: self._on_progress(d, t) if e == self._task_epoch else None
+        )
         self.worker.log.connect(self._log)
-        self.worker.finished_ok.connect(lambda p: self._on_download_ok(Path(p), cv))
-        self.worker.finished_fail.connect(self._on_download_fail)
+        self.worker.finished_ok.connect(
+            lambda p, e=epoch: self._on_download_ok(Path(p), cv) if e == self._task_epoch else None
+        )
+        self.worker.finished_fail.connect(
+            lambda m, e=epoch: self._on_download_fail(m) if e == self._task_epoch else None
+        )
         self.worker.start()
 
     # ------------------------------------------------------------------
@@ -782,10 +808,17 @@ class ComponentCard(QFrame):
         self.btn_cancel.setVisible(True)
         self.btn_cancel.setEnabled(True)
 
+        self._task_epoch += 1
+        epoch = self._task_epoch
+
         self.cmd_worker = CommandWorker(cmd)
         self.cmd_worker.log.connect(self._log)
-        self.cmd_worker.finished_ok.connect(lambda _: self._on_npm_ok(final))
-        self.cmd_worker.finished_fail.connect(self._on_command_fail)
+        self.cmd_worker.finished_ok.connect(
+            lambda _, e=epoch: self._on_npm_ok(final) if e == self._task_epoch else None
+        )
+        self.cmd_worker.finished_fail.connect(
+            lambda m, e=epoch: self._on_command_fail(m) if e == self._task_epoch else None
+        )
         self.cmd_worker.start()
 
     # ------------------------------------------------------------------
@@ -818,10 +851,18 @@ class ComponentCard(QFrame):
 
     # ------------------------------------------------------------------
     def on_cancel_clicked(self) -> None:
+        cancelled = False
         if self.cmd_worker and self.cmd_worker.isRunning():
             self.cmd_worker.cancel()
+            cancelled = True
         if self.worker and self.worker.isRunning():
             self.worker.cancel()
+            cancelled = True
+        if cancelled:
+            # 立即复位进度条：不等后台线程收尾（socket 可能阻塞在最后一个
+            # chunk 上），避免取消后进度条残留旧的下载值
+            self._reset_progress()
+            self._log("warn", "正在取消任务…")
 
     # ------------------------------------------------------------------
     def on_configure_clicked(self) -> None:
