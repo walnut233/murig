@@ -28,7 +28,7 @@ from ..core.models import Component, ComponentVersion
 from ..core.utils import ensure_dir, human_size
 from ..core.workers import CommandWorker, DownloadWorker
 from ..core.workspace import WS
-from .icons import folder_icon
+from .icons import settings_icon
 
 
 # ---------------------------------------------------------------------------
@@ -398,26 +398,44 @@ class ComponentCard(QFrame):
         self.btn_install.clicked.connect(self.on_install_clicked)
         mid.addWidget(self.btn_install)
 
+        # 更多菜单：仅下载 / 配置环境变量 / 修改安装目录 收进一个下拉，
+        # 让卡片首行只保留主操作「下载并安装」+「更多」
+        self.btn_more = QPushButton("更多")
+        self.btn_more.setObjectName("secondaryBtn")
+        self.btn_more.setCursor(QCursor(Qt.PointingHandCursor))
+        self.btn_more.setFixedHeight(34)
+        self.btn_more.setIcon(settings_icon(14))
+        self.btn_more.setIconSize(QSize(14, 14))
+        self.btn_more.setToolTip("仅下载、配置环境变量、修改安装目录等更多操作")
+        mid.addWidget(self.btn_more)
+
+        menu = QMenu(self)
         # 仅下载：把安装包留在 downloads 目录，不解压、不配置环境变量
-        self.btn_download = QPushButton("仅下载")
-        self.btn_download.setObjectName("secondaryBtn")
-        self.btn_download.setCursor(QCursor(Qt.PointingHandCursor))
-        self.btn_download.setFixedHeight(34)
+        self.btn_download = QAction("仅下载", self)
         self.btn_download.setToolTip(
             "只下载安装包到工作空间的 downloads 目录，不解压、不配置环境变量"
         )
-        self.btn_download.clicked.connect(self.on_download_only_clicked)
+        self.btn_download.triggered.connect(self.on_download_only_clicked)
         if self.component.npm_package:
             self.btn_download.setEnabled(False)
             self.btn_download.setToolTip("npm 包没有独立安装包，只能直接安装")
-        mid.addWidget(self.btn_download)
+        menu.addAction(self.btn_download)
 
-        self.btn_configure = QPushButton("配置环境变量")
-        self.btn_configure.setObjectName("secondaryBtn")
-        self.btn_configure.setCursor(QCursor(Qt.PointingHandCursor))
-        self.btn_configure.setFixedHeight(34)
-        self.btn_configure.clicked.connect(self.on_configure_clicked)
-        mid.addWidget(self.btn_configure)
+        self.btn_configure = QAction("配置环境变量", self)
+        self.btn_configure.triggered.connect(self.on_configure_clicked)
+        menu.addAction(self.btn_configure)
+
+        menu.addSeparator()
+        self.act_dir = QAction("修改安装目录…", self)
+        self.act_dir.triggered.connect(self._on_dir_clicked)
+        menu.addAction(self.act_dir)
+        self.act_clear_dir = QAction("清除自定义目录（回退分类/全局）", self)
+        self.act_clear_dir.triggered.connect(self._clear_dir_override)
+        menu.addAction(self.act_clear_dir)
+
+        # 弹出前刷新状态：清除项只在有覆盖时可用
+        menu.aboutToShow.connect(self._refresh_more_menu)
+        self.btn_more.setMenu(menu)
 
         self.btn_cancel = QPushButton("取消")
         self.btn_cancel.setObjectName("dangerBtn")
@@ -427,19 +445,6 @@ class ComponentCard(QFrame):
         self.btn_cancel.setVisible(False)  # 默认隐藏；开始下载时才显示
         self.btn_cancel.clicked.connect(self.on_cancel_clicked)
         mid.addWidget(self.btn_cancel)
-
-        # 工作空间入口：左键改目录，右键清除该组件的自定义目录
-        # 图标为代码绘制（📁 emoji 在部分系统渲染为空白方格）
-        self.btn_dir = QPushButton()
-        self.btn_dir.setIcon(folder_icon(16))
-        self.btn_dir.setIconSize(QSize(16, 16))
-        self.btn_dir.setObjectName("secondaryBtn")
-        self.btn_dir.setCursor(QCursor(Qt.PointingHandCursor))
-        self.btn_dir.setFixedSize(34, 34)
-        self.btn_dir.clicked.connect(self._on_dir_clicked)
-        self.btn_dir.setContextMenuPolicy(Qt.CustomContextMenu)
-        self.btn_dir.customContextMenuRequested.connect(self._on_dir_menu)
-        mid.addWidget(self.btn_dir)
 
         mid.addStretch(1)  # 右侧留空，避免下拉框被拉伸
         root.addLayout(mid)
@@ -490,10 +495,10 @@ class ComponentCard(QFrame):
         width = max(self.width() - 80, 120)
         self.dir_label.setText(fm.elidedText(text, Qt.ElideMiddle, width))
         self.dir_label.setToolTip(text)
-        tip = f"{text}（点击修改）"
+        tip = f"{text}（可在「更多」里修改）"
         if comp.key in WS.components:
-            tip += "；右键清除该组件的自定义目录"
-        self.btn_dir.setToolTip(tip)
+            tip += "；当前为自定义目录，可在「更多」里清除"
+        self.act_dir.setToolTip(tip)
 
     def resizeEvent(self, event) -> None:
         super().resizeEvent(event)
@@ -520,14 +525,14 @@ class ComponentCard(QFrame):
         self.refresh_workspace_label()
         self._detect_status()
 
-    def _on_dir_menu(self, pos) -> None:
-        if self.component.key not in WS.components:
-            return
-        menu = QMenu(self)
-        act = QAction("清除自定义目录（回退分类/全局）", self)
-        act.triggered.connect(self._clear_dir_override)
-        menu.addAction(act)
-        menu.exec(self.btn_dir.mapToGlobal(pos))
+    def _refresh_more_menu(self) -> None:
+        """「更多」菜单弹出前刷新各动作状态。"""
+        # 清除自定义目录：仅有覆盖时可选
+        self.act_clear_dir.setEnabled(self.component.key in WS.components)
+        self.act_dir.setText(
+            "修改安装目录…（当前为自定义）"
+            if self.component.key in WS.components else "修改安装目录…"
+        )
 
     def _clear_dir_override(self) -> None:
         comp = self.component
