@@ -162,13 +162,13 @@ pip install -r requirements.txt   # PySide6 + requests
 python main.py
 ```
 
-- 需要 Python 3.9+；首次启动自动创建工作目录（默认 `~/.env-tools/`，可在「工作空间」修改）
+- 需要 Python 3.9+；首次启动自动创建工作目录（默认 `~/.env-tools/`，可在「设置」修改）
 - macOS/Linux 装 Redis、Linux 装 PostgreSQL 需要 `make` 与 C 编译器；装 Claude Code 需先装 Node.js
 
 工作目录布局：
 
 ```
-~/.env-tools/              # 可在「工作空间」改到任意盘
+~/.env-tools/              # 可在「设置」改到任意盘
 ├── jdk/
 │   ├── downloads/         # 原始压缩包
 │   └── jdk-17/            # 解压后的组件
@@ -192,7 +192,7 @@ python main.py
 
 ## 🔧 配置工作空间（安装目录）
 
-组件默认装到内置目录 `~/.env-tools/`（Windows 下即 C 盘）。点击标题栏 **「工作空间」** 按钮打开设置弹窗，安装位置解析优先级：
+组件默认装到内置目录 `~/.env-tools/`（Windows 下即 C 盘）。点击标题栏 **「设置」** 按钮打开设置弹窗，安装位置解析优先级：
 
 1. **组件自定义**：组件卡片上的文件夹图标按钮单独指定（右键该按钮可清除）；
 2. **分类工作空间**：为六大分类分别指定目录；
@@ -200,7 +200,7 @@ python main.py
 4. 均未设置时回退内置默认 `~/.env-tools/`。
 
 <p align="center">
-  <img src="assets/murig_work.png" alt="工作空间设置弹窗" width="760"/>
+  <img src="assets/murig_work.png" alt="设置弹窗" width="760"/>
 </p>
 
 说明：
@@ -251,7 +251,7 @@ murig/
 └── assets/                             # 截图与打赏码
     ├── murig.png                       # 主界面截图
     ├── murig_db_version.png            # 版本下拉框截图
-    ├── murig_work.png                  # 工作空间弹窗截图
+    ├── murig_work.png                  # 设置弹窗截图
     ├── murig_about.png                 # 关于我们截图
     └── wechat.png / alipay.png / qq.png
 ```

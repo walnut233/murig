@@ -9,6 +9,7 @@
 
 from __future__ import annotations
 
+import math
 from typing import Callable
 
 from PySide6.QtCore import QPointF, QRectF, Qt
@@ -81,6 +82,21 @@ def folder_icon(size: int = 16, color: str = BODY_FG) -> QIcon:
         path.lineTo(4.5, 5.5)
         path.quadTo(3, 5.5, 3, 6.5)
         p.drawPath(path)
+    return _icon(size, color, draw)
+
+
+def settings_icon(size: int = 14, color: str = BAR_FG) -> QIcon:
+    """齿轮（设置）：中心圆 + 8 根齿。"""
+    def draw(p: QPainter) -> None:
+        p.drawEllipse(QRectF(9, 9, 6, 6))
+        for i in range(8):
+            a = math.radians(i * 45)
+            dx, dy = math.cos(a), math.sin(a)
+            _polyline(
+                p,
+                (12 + 5.2 * dx, 12 + 5.2 * dy),
+                (12 + 9.6 * dx, 12 + 9.6 * dy),
+            )
     return _icon(size, color, draw)
 
 

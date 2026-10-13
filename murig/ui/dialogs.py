@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""对话框：打赏、关于、工作空间设置。"""
+"""对话框：支持作者、关于、设置。"""
 
 from __future__ import annotations
 
@@ -356,17 +356,17 @@ class AboutDialog(QDialog):
 
 
 # ---------------------------------------------------------------------------
-# 工作空间设置对话框
+# 设置对话框
 # ---------------------------------------------------------------------------
 class WorkspaceDialog(QDialog):
-    """工作空间设置：全局默认 + 分类目录 + 组件自定义覆盖清单。
+    """设置：工作空间目录 + 下载通道 + 安装选项 + 安装包清理。
 
     修改即时生效并落盘；关闭时若有过修改则以 Accepted 返回，供主窗口刷新卡片。
     """
 
     def __init__(self, parent=None, log_cb=None, names=None) -> None:
         super().__init__(parent)
-        self.setWindowTitle("工作空间")
+        self.setWindowTitle("设置")
         # 固定合理宽度：路径用省略号截断（tooltip 看全名），不再被长路径撑宽
         self.setObjectName("workspaceDialog")
         self._log_cb = log_cb

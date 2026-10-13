@@ -27,7 +27,7 @@ from ..core.workspace import WS
 from .dialogs import AboutDialog, WorkspaceDialog
 from .icons import (
     BAR_FG, about_icon, close_icon, folder_icon,
-    maximize_icon, minimize_icon, refresh_icon, restore_icon,
+    maximize_icon, minimize_icon, refresh_icon, restore_icon, settings_icon,
 )
 from .widgets import ComponentCard
 
@@ -133,13 +133,13 @@ class MainWindow(QMainWindow):
         self.btn_refresh.clicked.connect(self._start_fetch_versions)
         tb.addWidget(self.btn_refresh)
 
-        # 工作空间设置
-        self.btn_workspace = QPushButton("工作空间")
-        self.btn_workspace.setIcon(folder_icon(14, BAR_FG))
+        # 设置：工作空间目录 / 下载通道 / 安装选项
+        self.btn_workspace = QPushButton("设置")
+        self.btn_workspace.setIcon(settings_icon(14, BAR_FG))
         self.btn_workspace.setIconSize(QSize(14, 14))
         self.btn_workspace.setObjectName("iconBtn")
         self.btn_workspace.setCursor(QCursor(Qt.PointingHandCursor))
-        self.btn_workspace.setToolTip("配置全局 / 分类 / 单组件的安装目录")
+        self.btn_workspace.setToolTip("设置安装目录、下载通道与安装选项")
         self.btn_workspace.clicked.connect(self._on_workspace_clicked)
         tb.addWidget(self.btn_workspace)
 
@@ -440,7 +440,7 @@ class MainWindow(QMainWindow):
     def refresh_status_bar(self) -> None:
         self.status_left.setText(
             f"系统：{CURRENT_OS} ({MACHINE})   工作目录：{WS.global_ws or CONFIG_DIR}"
-            "（可在「工作空间」修改）"
+            "（可在「设置」修改）"
         )
 
     # ------------------------------------------------------------------

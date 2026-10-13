@@ -754,7 +754,7 @@ class ComponentCard(QFrame):
                 size = "未知大小"
             self._log("ok", f"已下载（未解压）：{path}（{size}）")
             self._log("info", "需要安装时点「下载并安装」——会自动复用已下载的安装包；"
-                              "已下载的包可在「工作空间」里一键清理。")
+                              "已下载的包可在「设置」里一键清理。")
             self.btn_install.setEnabled(True)
             self.btn_download.setEnabled(not self.component.npm_package)
             self.btn_configure.setEnabled(True)
@@ -824,7 +824,7 @@ class ComponentCard(QFrame):
                 self._log(
                     "info",
                     f"已跳过环境变量配置；如需在命令行使用，点击卡片「配置环境变量」"
-                    f"（目录：{final}）。可在「工作空间」设置中开启自动配置。",
+                    f"（目录：{final}）。可在「设置」中开启自动配置。",
                 )
             for note in self.component.post_notes:
                 self._log("warn", note)
