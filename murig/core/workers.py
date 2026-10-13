@@ -6,12 +6,13 @@ from __future__ import annotations
 import os
 import subprocess
 from pathlib import Path
-from typing import Dict, List, Optional
+from typing import Dict, List, Optional, Tuple
 
 from PySide6.QtCore import QObject, QThread, Signal
 
 from .constants import CURRENT_OS
 from .http import get as http_get
+from .mirrors import DIRECT, MIRRORS, PROBE_URL
 from .utils import ensure_dir, human_size
 
 
@@ -37,43 +38,93 @@ class DownloadWorker(QThread):
     def cancel(self) -> None:
         self._cancel = True
 
+    # ------------------------------------------------------------------
+    def _channels(self) -> List[Tuple[str, str]]:
+        """按优先级给出下载通道 [(名称, URL)]：镜像在前，直连兜底。"""
+        mirrors = MIRRORS.candidates(self.url)
+        if MIRRORS.mode in ("auto", "") and not MIRRORS.fastest_for(self.url):
+            # 首次使用：对真实 URL 抽样测速，自动挑最快的通道
+            best = MIRRORS.auto_select(
+                self.url, on_note=lambda lv, m: self.log.emit(lv, m)
+            )
+            if best is not None:
+                mirrors = [best, DIRECT]
+        return [
+            (f"镜像 {m.name}" if m.id != "direct" else "直连", m.url_for(self.url))
+            for m in mirrors
+        ]
+
+    def _download(self, url: str, note_prefix: str) -> bool:
+        """从指定通道下载；失败抛异常，由 run() 切换到下一个通道。"""
+        self.log.emit("info", f"开始下载（{note_prefix}）：{url}")
+        ensure_dir(self.dest.parent)
+        # 走统一入口：MITM 代理/加速器导致证书校验失败时会自动降级重试
+        r = http_get(
+            url, timeout=30, headers=self.headers, stream=True,
+            allow_redirects=True,
+            on_note=lambda m: self.log.emit("warn", m),
+        )
+        with r:
+            # 响应阶段也可能收到取消（下载循环开始前只有这里能响应）
+            if self._cancel:
+                self.log.emit("warn", "已取消下载。")
+                self.finished_fail.emit("用户取消")
+                return True
+            total = int(r.headers.get("Content-Length", 0))
+            downloaded = 0
+            tmp = self.dest.with_suffix(self.dest.suffix + ".part")
+            with open(tmp, "wb") as f:
+                for chunk in r.iter_content(chunk_size=64 * 1024):
+                    if self._cancel:
+                        self.log.emit("warn", "已取消下载。")
+                        f.close()
+                        tmp.unlink(missing_ok=True)
+                        self.finished_fail.emit("用户取消")
+                        return True
+                    if chunk:
+                        f.write(chunk)
+                        downloaded += len(chunk)
+                        self.progress.emit(downloaded, total)
+            tmp.replace(self.dest)
+        self.log.emit("ok", f"下载完成：{self.dest} ({human_size(self.dest.stat().st_size)})")
+        self.finished_ok.emit(str(self.dest))
+        return True
+
     def run(self) -> None:  # noqa: D401
         try:
-            self.log.emit("info", f"开始下载：{self.url}")
-            ensure_dir(self.dest.parent)
-            # 走统一入口：MITM 代理/加速器导致证书校验失败时会自动降级重试
-            r = http_get(
-                self.url, timeout=30, headers=self.headers, stream=True,
-                allow_redirects=True,
-                on_note=lambda m: self.log.emit("warn", m),
-            )
-            with r:
-                # 响应阶段也可能收到取消（下载循环开始前只有这里能响应）
-                if self._cancel:
-                    self.log.emit("warn", "已取消下载。")
-                    self.finished_fail.emit("用户取消")
+            channels = self._channels()
+            if self._cancel:
+                self.log.emit("warn", "已取消下载。")
+                self.finished_fail.emit("用户取消")
+                return
+            last_exc: Optional[Exception] = None
+            for idx, (label, url) in enumerate(channels):
+                try:
+                    self._download(url, label)
                     return
-                total = int(r.headers.get("Content-Length", 0))
-                downloaded = 0
-                tmp = self.dest.with_suffix(self.dest.suffix + ".part")
-                with open(tmp, "wb") as f:
-                    for chunk in r.iter_content(chunk_size=64 * 1024):
-                        if self._cancel:
-                            self.log.emit("warn", "已取消下载。")
-                            f.close()
-                            tmp.unlink(missing_ok=True)
-                            self.finished_fail.emit("用户取消")
-                            return
-                        if chunk:
-                            f.write(chunk)
-                            downloaded += len(chunk)
-                            self.progress.emit(downloaded, total)
-                tmp.replace(self.dest)
-            self.log.emit("ok", f"下载完成：{self.dest} ({human_size(self.dest.stat().st_size)})")
-            self.finished_ok.emit(str(self.dest))
+                except Exception as exc:  # noqa: BLE001
+                    last_exc = exc
+                    if idx + 1 < len(channels):
+                        self.log.emit("warn", f"通道「{label}」下载失败，切换下一个：{exc}")
+            assert last_exc is not None
+            raise last_exc
         except Exception as exc:  # pragma: no cover
             self.log.emit("error", f"下载失败：{exc}")
             self.finished_fail.emit(str(exc))
+
+
+class MirrorProbeWorker(QThread):
+    """镜像测速线程（供设置界面使用），完成后给出各通道速度。"""
+
+    done = Signal(object)  # [(id, 名称, KB/s)]，按速度降序，失败为 -1
+
+    def __init__(self, url: Optional[str] = None,
+                 parent: Optional[QObject] = None) -> None:
+        super().__init__(parent)
+        self.url = url
+
+    def run(self) -> None:  # noqa: D401
+        self.done.emit(MIRRORS.probe(self.url or PROBE_URL))
 
 
 class CommandWorker(QThread):

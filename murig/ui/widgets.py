@@ -732,7 +732,8 @@ class ComponentCard(QFrame):
             os.chmod(installer_path, 0o755)
             cmd = ["bash", str(installer_path)] + args + [str(target_dir)]
             self._log("info", f"运行：{' '.join(cmd)}")
-            proc = subprocess.run(cmd, check=False, capture_output=True, text=True)
+            proc = subprocess.run(cmd, check=False, capture_output=True, text=True,
+                                  encoding="utf-8", errors="replace")
             if proc.stdout:
                 self._log("info", proc.stdout.strip()[:500])
             if proc.stderr:
@@ -754,6 +755,8 @@ class ComponentCard(QFrame):
                     cwd=str(home),
                     capture_output=True,
                     text=True,
+                    encoding="utf-8",
+                    errors="replace",
                     timeout=900,
                     check=False,
                 )

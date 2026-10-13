@@ -194,6 +194,10 @@ def _probe_version(exe: str, args: List[str]) -> str:
             [exe, *args],
             capture_output=True,
             text=True,
+            # 不用系统 locale（Windows 上是 GBK）：命令输出含非本地编码字节会
+            # 在读取线程里抛 UnicodeDecodeError
+            encoding="utf-8",
+            errors="replace",
             timeout=8,
             check=False,
         )

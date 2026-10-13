@@ -8,11 +8,14 @@ from typing import Dict, List
 from PySide6.QtCore import Qt, QUrl
 from PySide6.QtGui import QCursor, QDesktopServices, QPixmap
 from PySide6.QtWidgets import (
-    QApplication, QDialog, QFileDialog, QFrame, QGridLayout, QGroupBox,
-    QHBoxLayout, QLabel, QPushButton, QScrollArea, QVBoxLayout, QWidget,
+    QApplication, QComboBox, QDialog, QFileDialog, QFrame, QGridLayout,
+    QGroupBox, QHBoxLayout, QLabel, QLineEdit, QPushButton, QScrollArea,
+    QVBoxLayout, QWidget,
 )
 
 from ..core.constants import CATEGORIES, CATEGORY_ORDER, CONFIG_DIR
+from ..core.mirrors import MIRRORS, PRESETS
+from ..core.workers import MirrorProbeWorker
 from ..core.workspace import WS
 from ..resources import assets_dir
 
@@ -418,6 +421,41 @@ class WorkspaceDialog(QDialog):
         self._override_box.setSpacing(6)
         v.addWidget(grp)
 
+        # 下载加速（镜像源）
+        grp = QGroupBox("下载加速（GitHub Release 镜像源）")
+        g = QGridLayout(grp)
+        g.setColumnStretch(1, 1)
+        g.addWidget(QLabel("下载通道"), 0, 0)
+        self._mirror_combo = QComboBox()
+        self._mirror_combo.addItem("自动（测速选最快，优势不大则直连）", "auto")
+        self._mirror_combo.addItem("直连（不使用镜像）", "direct")
+        for m in PRESETS:
+            self._mirror_combo.addItem(m.name, m.id)
+        self._mirror_combo.addItem("自定义…", "custom")
+        idx = self._mirror_combo.findData(MIRRORS.mode)
+        self._mirror_combo.setCurrentIndex(idx if idx >= 0 else 0)
+        self._mirror_combo.currentIndexChanged.connect(self._on_mirror_changed)
+        g.addWidget(self._mirror_combo, 0, 1)
+
+        self._probe_btn = QPushButton("测速")
+        self._probe_btn.setObjectName("secondaryBtn")
+        self._probe_btn.setCursor(QCursor(Qt.PointingHandCursor))
+        self._probe_btn.clicked.connect(self._start_probe)
+        g.addWidget(self._probe_btn, 0, 2)
+
+        self._custom_edit = QLineEdit(MIRRORS.custom)
+        self._custom_edit.setPlaceholderText("自定义镜像模板，如 https://your-mirror.com/{url}")
+        self._custom_edit.textChanged.connect(self._on_custom_changed)
+        self._custom_edit.setEnabled(MIRRORS.mode == "custom")
+        g.addWidget(QLabel("模板"), 1, 0)
+        g.addWidget(self._custom_edit, 1, 1, 1, 2)
+
+        self._probe_label = QLabel("未测速")
+        self._probe_label.setObjectName("pathValue")
+        self._probe_label.setWordWrap(True)
+        g.addWidget(self._probe_label, 2, 1, 1, 2)
+        v.addWidget(grp)
+
         v.addStretch(1)
         scroll.setWidget(body)
         outer.addWidget(scroll, stretch=1)
@@ -448,6 +486,37 @@ class WorkspaceDialog(QDialog):
         self._refresh()
         if self._log_cb:
             self._log_cb("ok", f"工作空间已恢复默认：{what}")
+
+    # ------------------------------------------------------------------
+    # 下载镜像
+    # ------------------------------------------------------------------
+    def _on_mirror_changed(self) -> None:
+        mode = self._mirror_combo.currentData() or "auto"
+        MIRRORS.mode = mode
+        MIRRORS.save()
+        self._custom_edit.setEnabled(mode == "custom")
+        if self._log_cb:
+            self._log_cb("ok", f"下载通道已切换为：{self._mirror_combo.currentText()}")
+
+    def _on_custom_changed(self, text: str) -> None:
+        if MIRRORS.mode != "custom":
+            return
+        MIRRORS.custom = text.strip()
+        MIRRORS.save()
+
+    def _start_probe(self) -> None:
+        self._probe_btn.setEnabled(False)
+        self._probe_label.setText("测速中…（各通道抽样下载 384 KB）")
+        self._probe_worker = MirrorProbeWorker(parent=self)
+        self._probe_worker.done.connect(self._on_probe_done)
+        self._probe_worker.start()
+
+    def _on_probe_done(self, results) -> None:
+        lines = []
+        for _mid, name, speed in results:
+            lines.append(f"{name}：{int(speed)} KB/s" if speed > 0 else f"{name}：不可用")
+        self._probe_label.setText("\n".join(lines))
+        self._probe_btn.setEnabled(True)
 
     # ------------------------------------------------------------------
     def _refresh(self) -> None:
