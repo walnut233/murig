@@ -1,12 +1,12 @@
 # -*- coding: utf-8 -*-
-"""对话框：支持作者、关于、设置。"""
+"""对话框：关于、设置。"""
 
 from __future__ import annotations
 
-from typing import Dict, List
+from typing import Dict
 
 from PySide6.QtCore import Qt, QUrl
-from PySide6.QtGui import QCursor, QDesktopServices, QPixmap
+from PySide6.QtGui import QCursor, QDesktopServices, QIcon
 from PySide6.QtWidgets import (
     QApplication, QComboBox, QDialog, QFileDialog, QFrame,
     QGridLayout, QGroupBox, QHBoxLayout, QLabel, QLineEdit, QMessageBox,
@@ -19,7 +19,7 @@ from ..core.settings import INSTALL
 from ..core.utils import human_size, open_in_file_manager
 from ..core.workers import MirrorProbeWorker
 from ..core.workspace import WS
-from ..resources import assets_dir
+from ..resources import icon_path
 from .widgets import ToggleSwitch
 
 
@@ -28,115 +28,6 @@ class NoWheelComboBox(QComboBox):
 
     def wheelEvent(self, event) -> None:  # noqa: N802
         event.ignore()
-
-
-# ---------------------------------------------------------------------------
-# 支持作者区块（不出现在文档中；嵌入「关于我们」弹窗底部）
-# ---------------------------------------------------------------------------
-class DonateSection(QFrame):
-    """支持作者：微信 / 支付宝 / QQ，各渠道展示对应二维码。
-
-    原为顶栏独立的「支持作者」弹窗，现合并进「关于我们」，减少顶栏按钮。
-    """
-
-    # 每个渠道对应的品牌色、二维码文件名
-    CHANNELS = [
-        ("微信", "#07C160", "wechat.png"),
-        ("支付宝", "#1677FF", "alipay.png"),
-        ("QQ", "#EB1923", "qq.png"),
-    ]
-
-    def __init__(self, parent=None) -> None:
-        super().__init__(parent)
-        self.setObjectName("aboutCard")
-        self._assets_dir = assets_dir()
-
-        v = QVBoxLayout(self)
-        v.setContentsMargins(32, 24, 32, 22)
-        v.setSpacing(10)
-
-        heading = QLabel("支持作者 ☕")
-        heading.setObjectName("aboutHeading")
-        v.addWidget(heading)
-
-        tip = QLabel("如果本工具对你有所帮助，欢迎请作者一杯咖啡 ☕")
-        tip.setWordWrap(True)
-        tip.setObjectName("aboutText")
-        v.addWidget(tip)
-
-        # 渠道切换按钮行
-        row = QHBoxLayout()
-        row.setSpacing(10)
-        self._buttons: List[QPushButton] = []
-        for name, color, filename in self.CHANNELS:
-            btn = QPushButton(name)
-            btn.setCursor(QCursor(Qt.PointingHandCursor))
-            btn.setCheckable(True)
-            btn.setObjectName("channelBtn")
-            # 仅保留动态渠道色，其余外观交给 theme.qss
-            btn.setStyleSheet(f"background:{color};")
-            btn.clicked.connect(lambda _=False, n=name, c=color, f=filename: self._show_qr(n, c, f))
-            row.addWidget(btn)
-            self._buttons.append(btn)
-        v.addLayout(row)
-
-        # 当前渠道标签
-        self._channel_label = QLabel("")
-        self._channel_label.setAlignment(Qt.AlignCenter)
-        self._channel_label.setObjectName("channelLabel")
-        v.addWidget(self._channel_label)
-
-        # 二维码展示区
-        self.qr_view = QLabel("请选择上方渠道")
-        self.qr_view.setAlignment(Qt.AlignCenter)
-        self.qr_view.setFixedHeight(190)
-        self.qr_view.setObjectName("qrView")
-        v.addWidget(self.qr_view, alignment=Qt.AlignHCenter)
-
-        # 底部备注
-        note = QLabel("扫码打赏，感谢您的支持！")
-        note.setAlignment(Qt.AlignCenter)
-        note.setObjectName("donateNote")
-        v.addWidget(note)
-
-        # 默认展示第一个渠道
-        self._show_qr(*self.CHANNELS[0])
-
-    def _show_qr(self, channel: str, color: str = "", filename: str = "") -> None:
-        # 更新按钮 checked 状态
-        for btn in self._buttons:
-            btn.setChecked(btn.text() == channel)
-
-        self._channel_label.setText(f"【{channel}】收款码")
-        if color:
-            self._channel_label.setStyleSheet(f"color:{color};")
-
-        if not filename:
-            # 兼容旧调用：仅传 channel 时按 CHANNELS 查
-            for n, c, f in self.CHANNELS:
-                if n == channel:
-                    filename = f
-                    break
-
-        # 尝试加载二维码图片
-        qr_path = self._assets_dir / filename
-        if qr_path.exists():
-            pixmap = QPixmap(str(qr_path))
-            if not pixmap.isNull():
-                # 等比缩小到固定边长，整体弹窗更短更美观
-                scaled = pixmap.scaled(
-                    172, 172,
-                    Qt.KeepAspectRatio,
-                    Qt.SmoothTransformation,
-                )
-                self.qr_view.setPixmap(scaled)
-                return
-
-        # 加载失败：显示占位文字
-        self.qr_view.clear()
-        self.qr_view.setText(
-            f"未找到二维码文件：\n\n{qr_path}\n\n请将 {filename} 放入 assets 目录后重启。"
-        )
 
 
 # ---------------------------------------------------------------------------
@@ -176,6 +67,18 @@ class AboutDialog(QDialog):
         v.setContentsMargins(36, 28, 36, 24)
         v.setSpacing(10)
         scroll.setWidget(self._body)
+
+        # 应用图标（与窗口 / 任务栏同一个 icon.ico）
+        logo = QLabel()
+        logo.setObjectName("aboutLogo")
+        logo.setAlignment(Qt.AlignCenter)
+        icon_file = icon_path()
+        if icon_file.exists():
+            pm = QIcon(str(icon_file)).pixmap(72, 72)
+            if not pm.isNull():
+                logo.setPixmap(pm)
+        v.addWidget(logo, alignment=Qt.AlignHCenter)
+        v.addSpacing(6)
 
         # ABOUT US 胶囊
         pill = QLabel("ABOUT US")
@@ -320,10 +223,6 @@ class AboutDialog(QDialog):
         cl.addWidget(self.hint_label)
 
         v.addWidget(card)
-        v.addSpacing(12)
-
-        # 支持作者（微信 / 支付宝 / QQ 收款码）
-        v.addWidget(DonateSection(self))
 
     def _make_contact_item(
         self,
