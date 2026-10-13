@@ -325,7 +325,7 @@ QMenu::item:selected { background: #f0f2ff; color: #3730a3; }
 #aboutDialog, #workspaceDialog {
     background: #f5f7fb;
 }
-#aboutCard, #contactItem {
+#aboutCard {
     background: #ffffff;
     border: 1px solid #e8ecf3;
     border-radius: 14px;
@@ -375,21 +375,6 @@ QGroupBox::title {
 #aboutSubtitle { font-size: 11pt; color: #8a91a0; }
 #aboutHeading  { font-size: 14pt; font-weight: 700; color: #1f2430; }
 #aboutText     { font-size: 10.5pt; color: #5c6474; }
-#aboutHint     { font-size: 9pt; color: #4f46e5; }
-#contactBadge {
-    border: none;
-    border-radius: 12px;
-    font-weight: 700;
-    font-size: 11pt;
-    qproperty-alignment: AlignCenter;
-}
-#contactCaption { font-size: 9pt; color: #9aa1ad; background: none; border: none; }
-#contactValue   { font-size: 13.5pt; font-weight: 700; color: #1f2430; background: none; border: none; }
-
-/* 原作者内容卡片：弱化展示（虚线灰框 + 灰阶小字），与上文区分 */
-#authorCard    { background: #fafbfd; border: 1px dashed #dbe1ec; border-radius: 14px; }
-#authorHeading { font-size: 11pt; font-weight: 700; color: #8a91a0; }
-#authorText    { font-size: 10pt; color: #9aa1ad; }
 
 /* ---------------------------- 工作空间 ---------------------------- */
 #dialogTip  { font-size: 10pt; color: #5c6474; }

@@ -5,8 +5,8 @@ from __future__ import annotations
 
 from typing import Dict
 
-from PySide6.QtCore import Qt, QUrl
-from PySide6.QtGui import QCursor, QDesktopServices, QIcon
+from PySide6.QtCore import Qt
+from PySide6.QtGui import QCursor, QIcon
 from PySide6.QtWidgets import (
     QApplication, QComboBox, QDialog, QFileDialog, QFrame,
     QGridLayout, QGroupBox, QHBoxLayout, QLabel, QLineEdit, QMessageBox,
@@ -34,15 +34,14 @@ class NoWheelComboBox(QComboBox):
 # 关于我们弹窗
 # ---------------------------------------------------------------------------
 class AboutDialog(QDialog):
-    """关于我们：团队介绍 + QQ/微信群/微信联系方式。"""
+    """关于我们：项目溯源（基于 MuRig v1.2.0 二次开发）。"""
 
     def __init__(self, parent=None) -> None:
         super().__init__(parent)
         self.setWindowTitle("关于我们")
         self.setObjectName("aboutDialog")
         self._build_ui()
-        # 内容变长（含支持作者区块）后可能超出屏幕：宽高按内容自适应，
-        # 超出屏幕的部分交给滚动条
+        # 宽高按内容自适应，超出屏幕的部分交给滚动条
         hint = self._body.sizeHint()
         screen = QApplication.primaryScreen()
         if screen:
@@ -50,9 +49,8 @@ class AboutDialog(QDialog):
             max_w, max_h = int(avail.width() * 0.94), int(avail.height() * 0.9)
         else:
             max_w, max_h = 1000, 860
-        # 940：保证 2x2 联系卡完整展示；内容更高时交给滚动条
-        self.resize(min(max(940, hint.width()), max_w),
-                    min(hint.height() + 12, max(520, max_h)))
+        self.resize(min(max(560, hint.width()), max_w),
+                    min(hint.height() + 12, max(360, max_h)))
 
     def _build_ui(self) -> None:
         outer = QVBoxLayout(self)
@@ -115,7 +113,11 @@ class AboutDialog(QDialog):
             'text-decoration:none;font-weight:600;">MuRig v1.2.0 ↗</a>'
             " 制作演变而来：沿用其组件装配与环境配置的核心能力，并在此基础上"
             "新增、修复了部分功能，让下载安装与环境配置更顺手省心。<br><br>"
-            "以下卡片内容均来自原作者（联系方式与二维码归属原作者）："
+            "原项目由 "
+            '<a href="https://nav.qqmu.com" style="color:#5b5bd6;'
+            'text-decoration:none;font-weight:600;">沐编程</a>'
+            " 以 MIT 协议开源，在此致谢；本版本在保留原作者署名与授权的前提下"
+            "进行二次开发与维护。"
         )
         origin_text.setWordWrap(True)
         origin_text.setOpenExternalLinks(True)
@@ -124,162 +126,6 @@ class AboutDialog(QDialog):
         ol.addWidget(origin_text)
 
         v.addWidget(origin)
-        v.addSpacing(12)
-
-        # 原作者内容卡片：弱化展示，明确这段是原作者写的
-        card = QFrame()
-        card.setObjectName("authorCard")
-
-        cl = QVBoxLayout(card)
-        cl.setContentsMargins(32, 22, 32, 20)
-        cl.setSpacing(12)
-
-        heading = QLabel("原作者的话 · 来自 MuRig 原项目")
-        heading.setObjectName("authorHeading")
-        cl.addWidget(heading)
-
-        p1 = QLabel(
-            "我们是一群开源爱好者，专注于分享实用、开箱即用的小工具，"
-            "希望能帮你在日常工作中少写一点重复代码、少踩一点坑。"
-        )
-        p1.setWordWrap(True)
-        p1.setObjectName("authorText")
-        cl.addWidget(p1)
-
-        # 产品矩阵导流：点击在浏览器打开 nav.qqmu.com
-        p_nav = QLabel(
-            '更多开箱即用的小工具（MuOpt、MuAsk、JArgus、Jync 等），'
-            '欢迎逛逛我们的产品导航：'
-            '<a href="https://nav.qqmu.com" style="color:#8a94e8;'
-            'text-decoration:none;font-weight:600;">nav.qqmu.com ↗</a>'
-        )
-        p_nav.setWordWrap(True)
-        p_nav.setCursor(QCursor(Qt.PointingHandCursor))
-        p_nav.setObjectName("authorText")
-        p_nav.linkActivated.connect(
-            lambda url: QDesktopServices.openUrl(QUrl(url))
-        )
-        cl.addWidget(p_nav)
-
-        p2 = QLabel(
-            "如果你有更好的建议或想法，想提需求，或者在使用中遇到软件上的问题，"
-            "欢迎随时通过下面的方式联系我们 —— 每一条反馈我们都会认真看："
-        )
-        p2.setWordWrap(True)
-        p2.setObjectName("authorText")
-        cl.addWidget(p2)
-
-        # 联系方式 2x2（两行水平布局）
-        def contact_row(left_item, right_item) -> QHBoxLayout:
-            r = QHBoxLayout()
-            r.setSpacing(16)
-            r.addWidget(left_item)
-            r.addWidget(right_item)
-            return r
-
-        cl.addLayout(contact_row(
-            self._make_contact_item(
-                badge=("QQ", "#e9e8fc", "#5b5bd6"),
-                caption="QQ ①",
-                value="817094",
-                btn_text="点击对话 ↗",
-                on_click=lambda: self._open_qq_chat("817094"),
-            ),
-            self._make_contact_item(
-                badge=("QQ", "#e9e8fc", "#5b5bd6"),
-                caption="QQ ②",
-                value="2912167928",
-                btn_text="点击对话 ↗",
-                on_click=lambda: self._open_qq_chat("2912167928"),
-            ),
-        ))
-        cl.addSpacing(14)
-        cl.addLayout(contact_row(
-            self._make_contact_item(
-                badge=("群", "#fbeedd", "#d98c2b"),
-                caption="QQ 群（点击加群）",
-                value="426669837",
-                btn_text="点击加群 ↗",
-                on_click=lambda: self._copy_contact(
-                    "426669837", "QQ 群号已复制，请在 QQ 中搜索群号加入"
-                ),
-            ),
-            self._make_contact_item(
-                badge=("微", "#dcf4f4", "#16a3a3"),
-                caption="微信（点击复制）",
-                value="qqmu66",
-                btn_text="复制微信号",
-                on_click=lambda: self._copy_contact(
-                    "qqmu66", "微信号 qqmu66 已复制，请到微信中添加好友"
-                ),
-            ),
-        ))
-
-        # 操作反馈
-        self.hint_label = QLabel("")
-        self.hint_label.setWordWrap(True)
-        self.hint_label.setAlignment(Qt.AlignCenter)
-        self.hint_label.setObjectName("aboutHint")
-        cl.addWidget(self.hint_label)
-
-        v.addWidget(card)
-
-    def _make_contact_item(
-        self,
-        badge: tuple,
-        caption: str,
-        value: str,
-        btn_text: str,
-        on_click,
-    ) -> QFrame:
-        """构造一个联系方式条目（图标 + 名称 + 操作按钮）。"""
-        item = QFrame()
-        item.setObjectName("contactItem")
-        item.setFixedHeight(86)
-
-        h = QHBoxLayout(item)
-        h.setContentsMargins(16, 12, 16, 12)
-        h.setSpacing(12)
-
-        badge_text, badge_bg, badge_fg = badge
-        badge_lbl = QLabel(badge_text)
-        badge_lbl.setFixedSize(46, 46)
-        badge_lbl.setAlignment(Qt.AlignCenter)
-        badge_lbl.setObjectName("contactBadge")
-        badge_lbl.setStyleSheet(f"background:{badge_bg};color:{badge_fg};")
-        h.addWidget(badge_lbl)
-
-        text_col = QVBoxLayout()
-        text_col.setSpacing(2)
-        caption_lbl = QLabel(caption)
-        caption_lbl.setObjectName("contactCaption")
-        value_lbl = QLabel(value)
-        value_lbl.setObjectName("contactValue")
-        text_col.addWidget(caption_lbl)
-        text_col.addWidget(value_lbl)
-        h.addLayout(text_col)
-        h.addStretch(1)
-
-        btn = QPushButton(btn_text)
-        btn.setCursor(QCursor(Qt.PointingHandCursor))
-        btn.setObjectName("secondaryBtn")
-        btn.clicked.connect(on_click)
-        h.addWidget(btn)
-        return item
-
-    # ------------------------------------------------------------------
-    def _copy_to_clipboard(self, text: str) -> None:
-        QApplication.clipboard().setText(text)
-
-    def _copy_contact(self, text: str, hint: str) -> None:
-        self._copy_to_clipboard(text)
-        self.hint_label.setText(f"✓ {hint}：{text}")
-
-    def _open_qq_chat(self, uin: str) -> None:
-        """唤起 QQ 临时会话；同时复制 QQ 号，QQ 未安装时可手动添加。"""
-        self._copy_to_clipboard(uin)
-        QDesktopServices.openUrl(QUrl(f"tencent://message/?uin={uin}&Site=&Menu=yes"))
-        self.hint_label.setText(f"✓ 正在唤起 QQ 对话（QQ 号 {uin} 已复制，可手动添加）")
 
 
 # ---------------------------------------------------------------------------
