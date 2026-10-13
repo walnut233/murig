@@ -39,7 +39,8 @@ class MainWindow(QMainWindow):
         self.resize(1000, 680)
         self.setMinimumSize(880, 560)
         self.setWindowFlags(Qt.FramelessWindowHint | Qt.Window)
-        self.setAttribute(Qt.WA_TranslucentBackground, False)
+        # 真透明窗口：圆角缺口处透出桌面而不是窗口白色基色（白色底边根因）
+        self.setAttribute(Qt.WA_TranslucentBackground, True)
 
         self.components = build_components()
         self._drag_pos: Optional[QPoint] = None
@@ -288,12 +289,20 @@ class MainWindow(QMainWindow):
             self.showMaximized()
 
     def changeEvent(self, event) -> None:  # noqa: N802
-        """窗口最大化/还原时同步切换最大化按钮的图标。"""
+        """窗口最大化/还原时同步按钮图标，并切换圆角（最大化时直角）。"""
         super().changeEvent(event)
-        if event.type() == QEvent.Type.WindowStateChange and hasattr(self, "btn_max"):
-            self.btn_max.setIcon(
-                restore_icon(14) if self.isMaximized() else maximize_icon(14)
-            )
+        if event.type() == QEvent.Type.WindowStateChange:
+            if hasattr(self, "btn_max"):
+                self.btn_max.setIcon(
+                    restore_icon(14) if self.isMaximized() else maximize_icon(14)
+                )
+            maximized = self.isMaximized()
+            central = self.centralWidget()
+            if central is not None:
+                for w in (central, self.title_bar, self.status_bar):
+                    w.setProperty("maximized", maximized)
+                    w.style().unpolish(w)
+                    w.style().polish(w)
 
     # ------------------------------------------------------------------
     # 分类筛选 & 搜索

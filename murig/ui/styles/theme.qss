@@ -29,9 +29,17 @@ QToolTip {
 }
 
 /* ---------------------------- 主窗口 ---------------------------- */
+/* 根容器整体圆角：配合窗口 WA_TranslucentBackground，圆角外透出桌面 */
 #centralRoot {
     background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
                 stop:0 #f7f9fc, stop:1 #e9edf5);
+    border-radius: 10px;
+}
+/* 最大化时取消圆角，避免四角出现透明缺口 */
+#centralRoot[maximized="true"],
+#titleBar[maximized="true"],
+#statusBar[maximized="true"] {
+    border-radius: 0px;
 }
 
 /* 注意：文字所在的背景必须是「不透明纯色」。
