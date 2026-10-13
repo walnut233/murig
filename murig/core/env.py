@@ -80,6 +80,34 @@ class EnvManager:
         return hits
 
     @staticmethod
+    def open_env_editor() -> str:
+        """打开 Windows「环境变量」编辑窗口，优先以管理员权限启动。
+
+        普通权限打开的窗口里系统变量是只读的（点了没反应、也不提示提权），
+        所以这里用 ShellExecute 的 runas 动词触发 UAC 提权；提权失败（用户
+        取消 UAC、非管理员）再退化为普通打开，至少能查看用户变量。
+
+        返回 "admin"（已提权启动）/ "user"（未提权，系统变量只读）/ ""（失败）。
+        """
+        if CURRENT_OS != "Windows":
+            return ""
+        import ctypes
+
+        # sysdm.cpl,EditEnvironmentVariables：直接打开环境变量对话框
+        # （而不是系统属性的高级页，省得用户再点一次）
+        args = "sysdm.cpl,EditEnvironmentVariables"
+        try:
+            shell = ctypes.windll.shell32
+            if shell.ShellExecuteW(None, "runas", "rundll32.exe", args, None, 1) > 32:
+                return "admin"
+            # rc <= 32：用户取消 UAC、无管理员或 runas 不可用 -> 普通打开兜底
+            if shell.ShellExecuteW(None, "open", "rundll32.exe", args, None, 1) > 32:
+                return "user"
+        except Exception:
+            pass
+        return ""
+
+    @staticmethod
     def is_valid_home(path: str, exec_name: str) -> bool:
         """判断 XXX_HOME 是否有效——检查 bin 目录下是否存在可执行文件。"""
         if not path:

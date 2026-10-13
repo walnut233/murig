@@ -807,21 +807,27 @@ class ComponentCard(QFrame):
         box.setInformativeText(
             f"Windows 合并 PATH 时系统变量在前，新开的终端可能仍优先使用旧版本"
             f"（本次写入：{new_bin}）。\n\n"
-            "建议从「系统环境变量」的 Path 中移除上面的旧条目（需管理员权限），"
-            "或把新版本目录排到系统变量之前。"
+            "建议从「系统环境变量」的 Path 中移除上面的旧条目；改系统变量需要管理员"
+            "权限，点下方按钮会请求提权（UAC）。"
         )
         got_it = box.addButton("我知道了", QMessageBox.AcceptRole)
         edit_btn = None
         if CURRENT_OS == "Windows":
-            edit_btn = box.addButton("打开环境变量设置", QMessageBox.ActionRole)
+            edit_btn = box.addButton("以管理员打开环境变量设置", QMessageBox.ActionRole)
         box.setDefaultButton(got_it)
         box.exec()
         if edit_btn is not None and box.clickedButton() is edit_btn:
-            try:
-                subprocess.Popen(["rundll32", "sysdm.cpl,EditEnvironmentVariables"])
-                self._log("info", "已打开系统环境变量设置；修改系统 PATH 需管理员权限。")
-            except Exception as exc:
-                self._log("warn", f"打开环境变量设置失败，请手动打开：{exc}")
+            mode = EnvManager.open_env_editor()
+            if mode == "admin":
+                self._log("info", "已以管理员打开环境变量设置，可编辑系统变量 Path。")
+            elif mode == "user":
+                self._log(
+                    "warn",
+                    "以普通权限打开环境变量设置（未提权）：系统变量为只读，"
+                    "如需移除旧条目请在 UAC 弹窗中选择「是」。",
+                )
+            else:
+                self._log("warn", "打开环境变量设置失败，请手动打开：系统属性 → 高级 → 环境变量。")
 
     # ------------------------------------------------------------------
     def _run_installer(self, installer_path: Path, target_dir: Path) -> None:
