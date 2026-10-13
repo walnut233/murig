@@ -405,19 +405,14 @@ class WorkspaceDialog(QDialog):
         g.addWidget(self._global_label, 0, 1)
         g.addWidget(self._mini_btn(
             "浏览", "选择目录作为全局默认工作空间",
-            lambda: self._browse(
-                "选择全局默认工作空间",
-                str(WS.global_ws or CONFIG_DIR),
-                lambda p: WS.set_global(p),
-                "全局默认工作空间",
-            )), 0, 2)
+            self._on_browse_global), 0, 2)
         g.addWidget(self._mini_btn(
             "重置", "恢复为内置默认目录",
-            lambda: self._reset(
+            lambda *_args: self._reset(
                 lambda: WS.set_global(None), "全局默认工作空间")), 0, 3)
         g.addWidget(self._mini_btn(
             "打开", "在系统文件管理器中打开该目录",
-            lambda: self._open_dir(WS.global_ws or CONFIG_DIR)), 0, 4)
+            lambda *_args: self._open_dir(WS.global_ws or CONFIG_DIR)), 0, 4)
         v.addWidget(grp)
 
         # 分类工作空间
@@ -438,7 +433,8 @@ class WorkspaceDialog(QDialog):
             g.addWidget(lab, row, 1)
             g.addWidget(self._mini_btn(
                 "浏览", f"选择「{CATEGORIES[cat]}」的工作空间目录",
-                lambda c=cat: self._browse(
+                # clicked 会传入 checked 参数：用 *_args 吃掉，避免覆盖 c 的默认值
+                lambda *_args, c=cat: self._browse(
                     f"选择「{CATEGORIES[c]}」的工作空间",
                     str(WS.categories.get(c) or WS.global_ws or CONFIG_DIR),
                     lambda p, c=c: WS.set_category(c, p),
@@ -446,12 +442,12 @@ class WorkspaceDialog(QDialog):
                 )), row, 2)
             g.addWidget(self._mini_btn(
                 "重置", "清除该分类设置，跟随全局",
-                lambda c=cat: self._reset(
+                lambda *_args, c=cat: self._reset(
                     lambda c=c: WS.set_category(c, None),
                     f"分类「{CATEGORIES[c]}」工作空间")), row, 3)
             g.addWidget(self._mini_btn(
                 "打开", "在系统文件管理器中打开该目录",
-                lambda c=cat: self._open_dir(
+                lambda *_args, c=cat: self._open_dir(
                     WS.categories.get(c) or WS.global_ws or CONFIG_DIR)), row, 4)
         v.addWidget(grp)
 
@@ -537,6 +533,14 @@ class WorkspaceDialog(QDialog):
         self._refresh()
 
     # ------------------------------------------------------------------
+    def _on_browse_global(self, *_args) -> None:
+        self._browse(
+            "选择全局默认工作空间",
+            str(WS.global_ws or CONFIG_DIR),
+            lambda p: WS.set_global(p),
+            "全局默认工作空间",
+        )
+
     @staticmethod
     def _elide_mid(text: str, limit: int = 42) -> str:
         """路径过长时中间省略，保住盘符与末级目录名。"""
