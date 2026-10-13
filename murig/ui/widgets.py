@@ -202,6 +202,8 @@ class ComponentCard(QFrame):
         self.worker: Optional[DownloadWorker] = None
         self.cmd_worker: Optional[CommandWorker] = None
         self._extracted_path: Optional[Path] = None
+        # 本次任务是「仅下载」（不解压、不配置、保留安装包）
+        self._download_only: bool = False
 
         self.setObjectName("card")
         self.setFrameShape(QFrame.NoFrame)
@@ -338,6 +340,20 @@ class ComponentCard(QFrame):
         self.btn_install.setFixedHeight(34)
         self.btn_install.clicked.connect(self.on_install_clicked)
         mid.addWidget(self.btn_install)
+
+        # 仅下载：把安装包留在 downloads 目录，不解压、不配置环境变量
+        self.btn_download = QPushButton("仅下载")
+        self.btn_download.setObjectName("secondaryBtn")
+        self.btn_download.setCursor(QCursor(Qt.PointingHandCursor))
+        self.btn_download.setFixedHeight(34)
+        self.btn_download.setToolTip(
+            "只下载安装包到工作空间的 downloads 目录，不解压、不配置环境变量"
+        )
+        self.btn_download.clicked.connect(self.on_download_only_clicked)
+        if self.component.npm_package:
+            self.btn_download.setEnabled(False)
+            self.btn_download.setToolTip("npm 包没有独立安装包，只能直接安装")
+        mid.addWidget(self.btn_download)
 
         self.btn_configure = QPushButton("配置环境变量")
         self.btn_configure.setObjectName("secondaryBtn")
@@ -489,6 +505,7 @@ class ComponentCard(QFrame):
 
         # 尝试查找本地已解压目录（当前工作空间优先，兼容默认根里的旧安装）
         local_found = False
+        has_package = False
         for root in WS.roots_for(self.component.key, self.component.category):
             install_root = root / self.component.key
             if install_root.exists() and any(
@@ -497,10 +514,20 @@ class ComponentCard(QFrame):
             ):
                 local_found = True
                 break
+            dl = install_root / "downloads"
+            if dl.is_dir() and any(f.is_file() for f in dl.iterdir()):
+                has_package = True
         if local_found:
             self._set_status("warn", "● 已下载，未配置")
             self.btn_configure.setEnabled(True)
             self.btn_configure.setToolTip("将已下载的版本写入 XXX_HOME 与 PATH")
+            return
+
+        if has_package:
+            # 只下载过安装包、还没解压安装
+            self._set_status("warn", "● 已下载，未解压")
+            self.btn_configure.setEnabled(True)
+            self.btn_configure.setToolTip("尚未安装；点「下载并安装」会复用已下载的安装包")
             return
 
         self._set_status("idle", "○ 未安装")
@@ -562,11 +589,20 @@ class ComponentCard(QFrame):
         return self.component.versions[min(idx, len(self.component.versions) - 1)]
 
     # ------------------------------------------------------------------
-    def on_install_clicked(self) -> None:
+    def on_download_only_clicked(self) -> None:
+        """只下载安装包，不做解压安装与环境变量配置。"""
+        self.on_install_clicked(download_only=True)
+
+    def on_install_clicked(self, download_only: bool = False) -> None:
         cv = self._current_version()
+        self._download_only = download_only
 
         # npm 便携安装模式（如 Claude Code）：不走下载流程
         if self.component.npm_package:
+            if download_only:
+                self._download_only = False
+                self._log("warn", "npm 包没有独立安装包，只能直接安装。")
+                return
             self._start_npm_install(cv)
             return
 
@@ -611,6 +647,7 @@ class ComponentCard(QFrame):
         self.progress.setFormat("%p%")
         self.progress.setVisible(True)
         self.btn_install.setEnabled(False)
+        self.btn_download.setEnabled(False)
         self.btn_configure.setEnabled(False)
         self.btn_cancel.setVisible(True)
         self.btn_cancel.setEnabled(True)
@@ -650,6 +687,22 @@ class ComponentCard(QFrame):
         self._finish_progress()
         self.btn_cancel.setEnabled(False)
         self.btn_cancel.setVisible(False)
+
+        # 仅下载模式：安装包留在 downloads 目录，不解压、不配置、不清理
+        if self._download_only:
+            self._download_only = False
+            try:
+                size = human_size(path.stat().st_size)
+            except OSError:
+                size = "未知大小"
+            self._log("ok", f"已下载（未解压）：{path}（{size}）")
+            self._log("info", "需要安装时点「下载并安装」——会自动复用已下载的安装包；"
+                              "已下载的包可在「工作空间」里一键清理。")
+            self.btn_install.setEnabled(True)
+            self.btn_download.setEnabled(not self.component.npm_package)
+            self.btn_configure.setEnabled(True)
+            self._detect_status()
+            return
 
         try:
             target_root = self.component.workspace_root() / self.component.key
@@ -732,6 +785,7 @@ class ComponentCard(QFrame):
             self._log("error", f"安装/配置失败：{exc}\n{traceback.format_exc()}")
         finally:
             self.btn_install.setEnabled(True)
+            self.btn_download.setEnabled(not self.component.npm_package)
             self.btn_configure.setEnabled(True)
             # _detect_status 会根据探测结果再决定 btn_configure 是否禁用
             self._detect_status()
@@ -795,7 +849,9 @@ class ComponentCard(QFrame):
 
     # ------------------------------------------------------------------
     def _on_download_fail(self, msg: str) -> None:
+        self._download_only = False
         self.btn_install.setEnabled(True)
+        self.btn_download.setEnabled(not self.component.npm_package)
         self.btn_configure.setEnabled(True)
         self.btn_cancel.setEnabled(False)
         self.btn_cancel.setVisible(False)
@@ -828,6 +884,7 @@ class ComponentCard(QFrame):
         self.progress.setFormat("npm 安装中…")
         self.progress.setVisible(True)
         self.btn_install.setEnabled(False)
+        self.btn_download.setEnabled(False)
         self.btn_configure.setEnabled(False)
         self.btn_cancel.setVisible(True)
         self.btn_cancel.setEnabled(True)
@@ -860,6 +917,7 @@ class ComponentCard(QFrame):
         else:
             self._log("info", "已跳过环境变量配置；如需使用命令行，点击卡片「配置环境变量」。")
         self.btn_install.setEnabled(True)
+        self.btn_download.setEnabled(not self.component.npm_package)
         self.btn_configure.setEnabled(True)
         self._detect_status()
 
