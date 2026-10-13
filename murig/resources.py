@@ -19,6 +19,11 @@ def assets_dir() -> Path:
     return app_root() / "assets"
 
 
+def icon_path() -> Path:
+    """应用图标（窗口/任务栏/打包后的 exe 均使用）。"""
+    return assets_dir() / "icon.ico"
+
+
 def styles_dir() -> Path:
     """样式表目录。"""
     return Path(__file__).resolve().parent / "ui" / "styles"

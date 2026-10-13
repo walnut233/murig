@@ -22,6 +22,12 @@ datas = [
     (str(SPEC_DIR / "murig" / "ui" / "styles"), "murig/ui/styles"),
 ]
 
+# 应用图标：Windows 需要 .ico；macOS 的 .app 需要 .icns（缺失则沿用默认图标）
+icon_file = SPEC_DIR / "assets" / "icon.ico"
+exe_icon = str(icon_file) if icon_file.exists() and sys.platform == "win32" else None
+icns_file = SPEC_DIR / "assets" / "icon.icns"
+bundle_icon = str(icns_file) if icns_file.exists() else None
+
 hidden_imports = [
     # PySide6 相关子模块
     "PySide6.QtCore",
@@ -89,7 +95,7 @@ exe = EXE(
     target_arch=None,
     codesign_identity=None,
     entitlements_file=None,
-    # icon=str(SPEC_DIR / "assets" / "icon.icns"),  # 有 icon 时可开启
+    icon=exe_icon,
 )
 
 # ---------------------------------------------------------------------------
@@ -99,7 +105,7 @@ if sys.platform == "darwin":
     app = BUNDLE(
         exe,
         name=f"{APP_NAME}.app",
-        # icon=str(SPEC_DIR / "assets" / "icon.icns"),
+        icon=bundle_icon,
         bundle_identifier="com.qqmu.murig",
         info_plist={
             "CFBundleName": "MuRig",
