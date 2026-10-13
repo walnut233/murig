@@ -21,6 +21,13 @@ from ..core.workspace import WS
 from ..resources import assets_dir
 
 
+class NoWheelComboBox(QComboBox):
+    """未下拉时忽略滚轮：防止在滚动页面时光标扫过下拉框误改选中项。"""
+
+    def wheelEvent(self, event) -> None:  # noqa: N802
+        event.ignore()
+
+
 # ---------------------------------------------------------------------------
 # 支持作者区块（不出现在文档中；嵌入「关于我们」弹窗底部）
 # ---------------------------------------------------------------------------
@@ -462,7 +469,7 @@ class WorkspaceDialog(QDialog):
         g = QGridLayout(grp)
         g.setColumnStretch(1, 1)
         g.addWidget(QLabel("下载通道"), 0, 0)
-        self._mirror_combo = QComboBox()
+        self._mirror_combo = NoWheelComboBox()
         self._mirror_combo.addItem("自动（测速选最快，优势不大则直连）", "auto")
         self._mirror_combo.addItem("直连（不使用镜像）", "direct")
         for m in PRESETS:
@@ -487,7 +494,7 @@ class WorkspaceDialog(QDialog):
         g.addWidget(self._custom_edit, 1, 1, 1, 2)
 
         g.addWidget(QLabel("并行分块"), 3, 0)
-        self._parts_combo = QComboBox()
+        self._parts_combo = NoWheelComboBox()
         for n in (1, 2, 4, 8):
             self._parts_combo.addItem(
                 "关闭（单线程）" if n == 1 else f"{n} 段", n)
