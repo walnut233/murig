@@ -8,13 +8,14 @@ from typing import Dict, List
 from PySide6.QtCore import Qt, QUrl
 from PySide6.QtGui import QCursor, QDesktopServices, QPixmap
 from PySide6.QtWidgets import (
-    QApplication, QComboBox, QDialog, QFileDialog, QFrame, QGridLayout,
-    QGroupBox, QHBoxLayout, QLabel, QLineEdit, QMessageBox, QPushButton,
-    QScrollArea, QVBoxLayout, QWidget,
+    QApplication, QCheckBox, QComboBox, QDialog, QFileDialog, QFrame,
+    QGridLayout, QGroupBox, QHBoxLayout, QLabel, QLineEdit, QMessageBox,
+    QPushButton, QScrollArea, QVBoxLayout, QWidget,
 )
 
 from ..core.constants import CATEGORIES, CATEGORY_ORDER, CONFIG_DIR
 from ..core.mirrors import MIRRORS, PRESETS
+from ..core.settings import INSTALL
 from ..core.utils import human_size, open_in_file_manager
 from ..core.workers import MirrorProbeWorker
 from ..core.workspace import WS
@@ -514,6 +515,21 @@ class WorkspaceDialog(QDialog):
         g.addWidget(self._probe_label, 2, 1, 1, 2)
         v.addWidget(grp)
 
+        # 安装选项
+        grp = QGroupBox("安装选项")
+        g = QGridLayout(grp)
+        g.setColumnStretch(0, 1)
+        self._auto_env_box = QCheckBox("安装完成后自动配置环境变量")
+        self._auto_env_box.setChecked(INSTALL.auto_env)
+        self._auto_env_box.setToolTip(
+            "写入 XXX_HOME 与 PATH 会改动系统/用户配置；关闭时只下载解压，"
+            "需要时在组件卡片点「配置环境变量」"
+        )
+        self._auto_env_box.setCursor(QCursor(Qt.PointingHandCursor))
+        self._auto_env_box.toggled.connect(self._on_auto_env_changed)
+        g.addWidget(self._auto_env_box, 0, 0)
+        v.addWidget(grp)
+
         # 安装包清理
         grp = QGroupBox("安装包清理（组件解压安装后压缩包即不再需要）")
         g = QGridLayout(grp)
@@ -670,6 +686,19 @@ class WorkspaceDialog(QDialog):
     def _on_parts_changed(self) -> None:
         MIRRORS.parts = int(self._parts_combo.currentData() or 1)
         MIRRORS.save()
+
+    # ------------------------------------------------------------------
+    # 安装选项
+    # ------------------------------------------------------------------
+    def _on_auto_env_changed(self, checked: bool) -> None:
+        INSTALL.auto_env = bool(checked)
+        INSTALL.save()
+        if self._log_cb:
+            self._log_cb(
+                "ok",
+                "环境变量配置：安装后自动写入" if checked
+                else "环境变量配置：仅下载解压，需手动点「配置环境变量」",
+            )
 
     def _start_probe(self) -> None:
         self._probe_btn.setEnabled(False)

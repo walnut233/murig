@@ -331,6 +331,7 @@ QMenu::item:selected { background: #f0f2ff; color: #3730a3; }
     border-radius: 14px;
 }
 QDialog QLabel { background: transparent; }
+QDialog QCheckBox { background: transparent; spacing: 8px; padding: 4px 2px; }
 QDialog QPushButton#primaryBtn, QDialog QPushButton#secondaryBtn { min-width: 76px; }
 /* 带滚动容器的对话框：内容层背景与对话框一致，避免出现灰白条带 */
 #workspaceDialog QScrollArea, #aboutDialog QScrollArea,

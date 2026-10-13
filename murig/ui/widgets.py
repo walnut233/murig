@@ -23,6 +23,7 @@ from PySide6.QtWidgets import (
 from ..core.archive import extract_archive, extract_rpm
 from ..core.constants import CURRENT_OS
 from ..core.env import EnvManager
+from ..core.settings import INSTALL
 from ..core.models import Component, ComponentVersion
 from ..core.utils import ensure_dir, human_size
 from ..core.workers import CommandWorker, DownloadWorker
@@ -705,8 +706,16 @@ class ComponentCard(QFrame):
                 self._run_after_extract(final)
 
             self._extracted_path = final
-            # 自动尝试配置环境变量
-            self._configure_env(final)
+            # 配置环境变量是附加项：默认只在用户开启自动配置时才写入
+            # （写入 XXX_HOME / PATH 会改动系统配置，按需进行）
+            if INSTALL.auto_env:
+                self._configure_env(final)
+            else:
+                self._log(
+                    "info",
+                    f"已跳过环境变量配置；如需在命令行使用，点击卡片「配置环境变量」"
+                    f"（目录：{final}）。可在「工作空间」设置中开启自动配置。",
+                )
             for note in self.component.post_notes:
                 self._log("warn", note)
 
@@ -846,7 +855,10 @@ class ComponentCard(QFrame):
         self.btn_cancel.setVisible(False)
         self._log("ok", f"npm 安装完成：{final}")
         self._extracted_path = final
-        self._configure_env(final)
+        if INSTALL.auto_env:
+            self._configure_env(final)
+        else:
+            self._log("info", "已跳过环境变量配置；如需使用命令行，点击卡片「配置环境变量」。")
         self.btn_install.setEnabled(True)
         self.btn_configure.setEnabled(True)
         self._detect_status()
