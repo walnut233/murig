@@ -8,10 +8,10 @@ import subprocess
 from pathlib import Path
 from typing import Dict, List, Optional
 
-import requests
 from PySide6.QtCore import QObject, QThread, Signal
 
 from .constants import CURRENT_OS
+from .http import get as http_get
 from .utils import ensure_dir, human_size
 
 
@@ -41,9 +41,13 @@ class DownloadWorker(QThread):
         try:
             self.log.emit("info", f"开始下载：{self.url}")
             ensure_dir(self.dest.parent)
-            with requests.get(self.url, stream=True, timeout=30, allow_redirects=True,
-                              headers=self.headers) as r:
-                r.raise_for_status()
+            # 走统一入口：MITM 代理/加速器导致证书校验失败时会自动降级重试
+            r = http_get(
+                self.url, timeout=30, headers=self.headers, stream=True,
+                allow_redirects=True,
+                on_note=lambda m: self.log.emit("warn", m),
+            )
+            with r:
                 # 响应阶段也可能收到取消（下载循环开始前只有这里能响应）
                 if self._cancel:
                     self.log.emit("warn", "已取消下载。")

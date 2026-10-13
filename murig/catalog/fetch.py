@@ -13,6 +13,7 @@ from urllib.parse import urlparse
 import requests
 
 from ..core.constants import CURRENT_OS, IS_ARM
+from ..core.http import get as http_get
 from ..core.models import ComponentVersion
 from .urls import *  # noqa: F401,F403  各组件 URL 构造函数
 
@@ -51,40 +52,14 @@ def _http_error(url: str, exc: Exception, code: int) -> Exception:
 
 def _get(url: str, timeout: int = 10,
          headers: Optional[Dict[str, str]] = None) -> requests.Response:
-    """带自动重试与 SSL 降级的 GET 请求。
-
-    - 网络抖动/临时错误：最多重试 3 次，指数退避（1s, 2s）
-    - SSL 错误（企业代理 MITM / 系统证书缺失等）：最后一次尝试关闭 SSL 校验
-    - 4xx（401/403/404/429）直接抛出不再重试：重试只会浪费本就紧张的配额
-    """
-    import time as _time
-    headers = headers or {"User-Agent": "MuRig"}
-    last_exc: Optional[Exception] = None
-    for attempt in range(3):
-        try:
-            if attempt < 2:
-                r = requests.get(url, timeout=timeout, headers=headers)
-            else:
-                # 最后一次：关闭 SSL 校验，让企业代理/自签证书场景也能工作
-                import urllib3
-                urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
-                r = requests.get(url, timeout=timeout, headers=headers, verify=False)
-            r.raise_for_status()
-            return r
-        except requests.exceptions.HTTPError as e:
-            code = getattr(getattr(e, "response", None), "status_code", 0)
-            if code in (401, 403, 404, 429):
-                raise _http_error(url, e, code)
-            last_exc = e
-        except requests.exceptions.SSLError as e:
-            last_exc = e
-            # SSL 错误直接进入下一次尝试
-        except Exception as e:
-            last_exc = e
-        if attempt < 2:
-            _time.sleep(1 << attempt)  # 1s, 2s
-    assert last_exc is not None
-    raise last_exc
+    """抓取用的 GET：复用 core.http 的重试与证书降级，并把限流错误转成友好提示。"""
+    try:
+        return http_get(url, timeout=timeout, headers=headers)
+    except requests.exceptions.HTTPError as e:
+        code = getattr(getattr(e, "response", None), "status_code", 0)
+        if code in (401, 403, 404, 429):
+            raise _http_error(url, e, code)
+        raise
 
 
 # ---------------------------------------------------------------------------
