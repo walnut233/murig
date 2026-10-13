@@ -195,6 +195,34 @@ class AboutDialog(QDialog):
         v.addWidget(subtitle)
         v.addSpacing(8)
 
+        # 项目溯源：本工具由开源项目 MuRig 二次开发而来
+        origin = QFrame()
+        origin.setObjectName("aboutCard")
+        ol = QVBoxLayout(origin)
+        ol.setContentsMargins(32, 22, 32, 20)
+        ol.setSpacing(8)
+
+        origin_heading = QLabel("项目溯源")
+        origin_heading.setObjectName("aboutHeading")
+        ol.addWidget(origin_heading)
+
+        origin_text = QLabel(
+            "本工具基于开源项目 "
+            '<a href="https://github.com/vfaner/murig" style="color:#5b5bd6;'
+            'text-decoration:none;font-weight:600;">MuRig v1.2.0 ↗</a>'
+            " 制作演变而来：沿用其组件装配与环境配置的核心能力，并在此基础上"
+            "新增、修复了部分功能，让下载安装与环境配置更顺手省心。<br><br>"
+            "以下是原作者的「关于我们」内容："
+        )
+        origin_text.setWordWrap(True)
+        origin_text.setOpenExternalLinks(True)
+        origin_text.setToolTip("https://github.com/vfaner/murig")
+        origin_text.setObjectName("aboutText")
+        ol.addWidget(origin_text)
+
+        v.addWidget(origin)
+        v.addSpacing(12)
+
         # 介绍卡片
         card = QFrame()
         card.setObjectName("aboutCard")
