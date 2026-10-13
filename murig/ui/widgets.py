@@ -11,8 +11,10 @@ from pathlib import Path, PurePosixPath
 from typing import Callable, List, Optional
 from urllib.parse import urlparse
 
-from PySide6.QtCore import QEvent, QSize, Qt, Signal
-from PySide6.QtGui import QAction, QCursor, QFont, QFontMetrics
+from PySide6.QtCore import QEvent, QRectF, QSize, Qt, Signal
+from PySide6.QtGui import (
+    QAction, QColor, QCursor, QFont, QFontMetrics, QPainter, QPainterPath, QPen,
+)
 from PySide6.QtWidgets import (
     QComboBox, QCompleter, QFileDialog, QFrame, QHBoxLayout, QLabel, QMenu,
     QMessageBox, QProgressBar, QPushButton, QSizePolicy, QVBoxLayout,
@@ -204,10 +206,71 @@ class ComponentCard(QFrame):
         self.setFrameShape(QFrame.NoFrame)
         # 说明：这里刻意不使用 QGraphicsDropShadowEffect —— Qt 图形特效会把卡片
         # 整体渲染到带 alpha 的离屏表面，导致卡内文字的亚像素抗锯齿退化为灰度
-        # 抗锯齿（发灰、毛边）。层次感改为由 theme.qss 的边框 + 圆角表达。
+        # 抗锯齿（发灰、毛边）。
+        # 背景 / 边框 / hover 高亮全部由 paintEvent 自绘（QPainter 抗锯齿），
+        # 因为 QSS 的圆角边框不做抗锯齿，1px 逻辑边框在 150% 缩放下还会
+        # 变成 1.5 物理像素，圆角处锯齿非常明显。
+        self._hovered = False
 
         self._build_ui()
         self._detect_status()
+
+    # ------------------------------------------------------------------
+    # 自绘卡片外观（替代 QSS 边框，圆角平滑无锯齿）
+    # ------------------------------------------------------------------
+    def enterEvent(self, event) -> None:  # noqa: N802
+        self._hovered = True
+        self.update()
+        super().enterEvent(event)
+
+    def leaveEvent(self, event) -> None:  # noqa: N802
+        self._hovered = False
+        self.update()
+        super().leaveEvent(event)
+
+    def paintEvent(self, event) -> None:  # noqa: N802
+        painter = QPainter(self)
+        painter.setRenderHint(QPainter.RenderHint.Antialiasing, True)
+
+        # 半径与内缩：留出笔宽空间，避免高缩放下边缘被裁剪
+        radius = 13.0
+        inset = 0.75
+        rect = QRectF(self.rect()).adjusted(inset, inset, -inset, -inset)
+
+        if self._hovered:
+            fill = QColor("#fbfbff")          # 极浅的靛蓝色调
+            border = QColor("#818cf8")
+            accent = QColor("#c7d2fe")        # 底部落影边
+        else:
+            fill = QColor("#ffffff")
+            border = QColor("#e7ebf2")
+            accent = QColor("#eef1f7")
+
+        # 背景
+        painter.setPen(Qt.NoPen)
+        painter.setBrush(fill)
+        painter.drawRoundedRect(rect, radius, radius)
+
+        # 底部“落影边”：裁剪进圆角内，增加层次感（替代 QSS 的 border-bottom）
+        painter.save()
+        path = QPainterPath()
+        path.addRoundedRect(rect, radius, radius)
+        painter.setClipPath(path)
+        painter.setBrush(accent)
+        painter.drawRect(QRectF(rect.left(), rect.bottom() - 3.0, rect.width(), 3.0))
+        painter.restore()
+
+        # 边框；hover 时叠加一圈内侧光晕（不用 graphics effect，避免文字退化）
+        painter.setBrush(Qt.NoBrush)
+        if self._hovered:
+            glow_pen = QPen(QColor(99, 102, 241, 34), 5.0)
+            painter.setPen(glow_pen)
+            glow_rect = rect.adjusted(2.5, 2.5, -2.5, -2.5)
+            painter.drawRoundedRect(glow_rect, radius - 2.5, radius - 2.5)
+            painter.setPen(QPen(border, 1.4))
+        else:
+            painter.setPen(QPen(border, 1.2))
+        painter.drawRoundedRect(rect, radius, radius)
 
     # ------------------------------------------------------------------
     def _build_ui(self) -> None:

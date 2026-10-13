@@ -121,14 +121,12 @@ QPushButton#categoryChip:checked {
 #cardsScroll { border: none; background: transparent; }
 #cardsWrap { background: transparent; }
 
-/* 层次感靠边框而非阴影：阴影特效会让卡内文字抗锯齿退化（见 widgets.py 注释） */
+/* 卡片外观（背景/边框/hover 光晕）由 ComponentCard.paintEvent 自绘：
+   QSS 圆角边框无抗锯齿，150% 缩放下 1px 逻辑边框锯齿明显（见 widgets.py 注释） */
 #card {
-    background: #ffffff;
-    border: 1px solid #e5e9f0;
-    border-bottom: 2px solid #dde3ee;
-    border-radius: 14px;
+    background: transparent;
+    border: none;
 }
-#card:hover { border-color: #c7d2fe; border-bottom-color: #a5b4fc; }
 #cardTitle {
     color: #1f2430;
     font-size: 10.5pt;
