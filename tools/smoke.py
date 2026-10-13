@@ -16,7 +16,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 from PySide6.QtCore import QTimer  # noqa: E402
 from PySide6.QtWidgets import QApplication  # noqa: E402
 
-from murig.ui.dialogs import AboutDialog, DonateDialog, WorkspaceDialog  # noqa: E402
+from murig.ui.dialogs import AboutDialog, WorkspaceDialog  # noqa: E402
 from murig.ui.main_window import MainWindow  # noqa: E402
 from murig.ui.theme import apply_theme, load_stylesheet, stylesheet_path  # noqa: E402
 
@@ -42,7 +42,7 @@ def run() -> int:
     win.show()
     print(f"[smoke] 主窗口已构造，组件卡片 {len(win.cards)} 个")
 
-    for cls in (DonateDialog, AboutDialog, WorkspaceDialog):
+    for cls in (AboutDialog, WorkspaceDialog):
         dlg = cls(win) if cls is not WorkspaceDialog else cls(win, lambda *a: None, {})
         dlg.show()
         print(f"[smoke] 对话框已构造：{cls.__name__}")

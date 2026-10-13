@@ -24,9 +24,9 @@ from ..core.constants import (
 )
 from ..core.utils import open_in_file_manager
 from ..core.workspace import WS
-from .dialogs import AboutDialog, DonateDialog, WorkspaceDialog
+from .dialogs import AboutDialog, WorkspaceDialog
 from .icons import (
-    BAR_FG, about_icon, close_icon, folder_icon, heart_icon,
+    BAR_FG, about_icon, close_icon, folder_icon,
     maximize_icon, minimize_icon, refresh_icon, restore_icon,
 )
 from .widgets import ComponentCard
@@ -152,17 +152,6 @@ class MainWindow(QMainWindow):
         self.btn_open_dir.setToolTip("在系统文件管理器中打开当前工作空间目录")
         self.btn_open_dir.clicked.connect(self._on_open_dir_clicked)
         tb.addWidget(self.btn_open_dir)
-
-        # 捐赠（不在 README 中提及）
-        self.btn_donate = QPushButton()
-        self.btn_donate.setIcon(heart_icon(16))
-        self.btn_donate.setIconSize(QSize(16, 16))
-        self.btn_donate.setFixedSize(34, 30)
-        self.btn_donate.setObjectName("donateBtn")
-        self.btn_donate.setCursor(QCursor(Qt.PointingHandCursor))
-        self.btn_donate.setToolTip("支持作者")
-        self.btn_donate.clicked.connect(self._on_donate_clicked)
-        tb.addWidget(self.btn_donate)
 
         # 窗口控制按钮：统一固定尺寸 + 矢量图标，保证三者一致
         ctrl_size = QSize(44, 30)
@@ -424,9 +413,6 @@ class MainWindow(QMainWindow):
             self.btn_refresh.setText("刷新版本")
             self._append_log("info", "版本列表获取完成。")
 
-    # ------------------------------------------------------------------
-    def _on_donate_clicked(self) -> None:
-        DonateDialog(self).exec()
 
     # ------------------------------------------------------------------
     def _on_about_clicked(self) -> None:

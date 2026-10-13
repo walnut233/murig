@@ -22,10 +22,13 @@ from ..resources import assets_dir
 
 
 # ---------------------------------------------------------------------------
-# 捐赠弹窗（不出现在文档中；仅代码内实现）
+# 支持作者区块（不出现在文档中；嵌入「关于我们」弹窗底部）
 # ---------------------------------------------------------------------------
-class DonateDialog(QDialog):
-    """支持作者：微信 / 支付宝 / QQ，各渠道展示对应二维码。"""
+class DonateSection(QFrame):
+    """支持作者：微信 / 支付宝 / QQ，各渠道展示对应二维码。
+
+    原为顶栏独立的「支持作者」弹窗，现合并进「关于我们」，减少顶栏按钮。
+    """
 
     # 每个渠道对应的品牌色、二维码文件名
     CHANNELS = [
@@ -36,22 +39,20 @@ class DonateDialog(QDialog):
 
     def __init__(self, parent=None) -> None:
         super().__init__(parent)
-        self.setWindowTitle("支持作者")
-        self.setFixedSize(380, 402)
-        self.setObjectName("donateDialog")
+        self.setObjectName("aboutCard")
         self._assets_dir = assets_dir()
-        self._build_ui()
-        # 默认展示第一个渠道
-        self._show_qr(*self.CHANNELS[0])
 
-    def _build_ui(self) -> None:
         v = QVBoxLayout(self)
-        v.setContentsMargins(16, 16, 16, 16)
+        v.setContentsMargins(32, 24, 32, 22)
         v.setSpacing(10)
 
+        heading = QLabel("支持作者 ☕")
+        heading.setObjectName("aboutHeading")
+        v.addWidget(heading)
+
         tip = QLabel("如果本工具对你有所帮助，欢迎请作者一杯咖啡 ☕")
-        tip.setAlignment(Qt.AlignCenter)
-        tip.setObjectName("donateTip")
+        tip.setWordWrap(True)
+        tip.setObjectName("aboutText")
         v.addWidget(tip)
 
         # 渠道切换按钮行
@@ -76,10 +77,10 @@ class DonateDialog(QDialog):
         self._channel_label.setObjectName("channelLabel")
         v.addWidget(self._channel_label)
 
-        # 二维码展示区（固定尺寸，整体弹窗更紧凑）
-        self.qr_view = QLabel("请选择下方渠道")
+        # 二维码展示区
+        self.qr_view = QLabel("请选择上方渠道")
         self.qr_view.setAlignment(Qt.AlignCenter)
-        self.qr_view.setFixedHeight(214)
+        self.qr_view.setFixedHeight(190)
         self.qr_view.setObjectName("qrView")
         v.addWidget(self.qr_view, alignment=Qt.AlignHCenter)
 
@@ -88,6 +89,9 @@ class DonateDialog(QDialog):
         note.setAlignment(Qt.AlignCenter)
         note.setObjectName("donateNote")
         v.addWidget(note)
+
+        # 默认展示第一个渠道
+        self._show_qr(*self.CHANNELS[0])
 
     def _show_qr(self, channel: str, color: str = "", filename: str = "") -> None:
         # 更新按钮 checked 状态
@@ -112,7 +116,7 @@ class DonateDialog(QDialog):
             if not pixmap.isNull():
                 # 等比缩小到固定边长，整体弹窗更短更美观
                 scaled = pixmap.scaled(
-                    196, 196,
+                    172, 172,
                     Qt.KeepAspectRatio,
                     Qt.SmoothTransformation,
                 )
@@ -135,15 +139,34 @@ class AboutDialog(QDialog):
     def __init__(self, parent=None) -> None:
         super().__init__(parent)
         self.setWindowTitle("关于我们")
-        self.setMinimumWidth(760)
         self.setObjectName("aboutDialog")
         self._build_ui()
-        self.adjustSize()
+        # 内容变长（含支持作者区块）后可能超出屏幕：宽高按内容自适应，
+        # 超出屏幕的部分交给滚动条
+        hint = self._body.sizeHint()
+        screen = QApplication.primaryScreen()
+        if screen:
+            avail = screen.availableGeometry()
+            max_w, max_h = int(avail.width() * 0.94), int(avail.height() * 0.9)
+        else:
+            max_w, max_h = 1000, 860
+        # 940：保证 2x2 联系卡完整展示；内容更高时交给滚动条
+        self.resize(min(max(940, hint.width()), max_w),
+                    min(hint.height() + 12, max(520, max_h)))
 
     def _build_ui(self) -> None:
-        v = QVBoxLayout(self)
+        outer = QVBoxLayout(self)
+        outer.setContentsMargins(0, 0, 0, 0)
+        scroll = QScrollArea()
+        scroll.setWidgetResizable(True)
+        scroll.setFrameShape(QFrame.NoFrame)
+        self._body = QWidget()
+        outer.addWidget(scroll)
+
+        v = QVBoxLayout(self._body)
         v.setContentsMargins(36, 28, 36, 24)
         v.setSpacing(10)
+        scroll.setWidget(self._body)
 
         # ABOUT US 胶囊
         pill = QLabel("ABOUT US")
@@ -260,6 +283,10 @@ class AboutDialog(QDialog):
         cl.addWidget(self.hint_label)
 
         v.addWidget(card)
+        v.addSpacing(12)
+
+        # 支持作者（微信 / 支付宝 / QQ 收款码）
+        v.addWidget(DonateSection(self))
 
     def _make_contact_item(
         self,

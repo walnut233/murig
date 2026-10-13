@@ -16,7 +16,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 from PySide6.QtCore import QTimer  # noqa: E402
 from PySide6.QtWidgets import QApplication  # noqa: E402
 
-from murig.ui.dialogs import AboutDialog, DonateDialog, WorkspaceDialog  # noqa: E402
+from murig.ui.dialogs import AboutDialog, WorkspaceDialog  # noqa: E402
 from murig.ui.main_window import MainWindow  # noqa: E402
 from murig.ui.theme import apply_theme  # noqa: E402
 
@@ -36,7 +36,6 @@ def run() -> int:
 
     for name, dlg in (
         ("about", AboutDialog(win)),
-        ("donate", DonateDialog(win)),
         ("workspace", WorkspaceDialog(win, lambda *a: None, {})),
     ):
         dlg.show()
