@@ -424,6 +424,8 @@ def build_components() -> List[Component]:
             aliases=["ccswitch", "cc switch", "供应商切换", "镜像源切换"],
             extra_bin_dirs=["CC Switch.app/Contents/MacOS", ""],
             raw_bin_name="cc-switch",
+            # 桌面 GUI 应用：探测版本时执行 cc-switch.exe 会直接打开程序窗口
+            gui_app=True,
         )
     )
 

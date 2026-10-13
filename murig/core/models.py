@@ -5,9 +5,10 @@ from __future__ import annotations
 
 import shutil
 import subprocess
+import time
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Dict, List, Optional
+from typing import Dict, List, Optional, Tuple
 
 from .constants import CURRENT_OS
 from .env import EnvManager
@@ -80,6 +81,9 @@ class Component:
     # PATH / XXX_HOME 都找不到时，再扫的标准安装路径（支持 glob 通配，如
     # "C:/Program Files/MySQL/MySQL Server *"；macOS 官方 pkg 的 /usr/local/mysql）
     well_known_homes: List[str] = field(default_factory=list)
+    # GUI 应用（如 CC-Switch）：探测时**绝不执行**它的可执行文件，否则会弹出
+    # 程序窗口（表现为安装后反复打开/关闭）。未显式声明时也会按 PE 头自动识别
+    gui_app: bool = False
 
     def install_dir(self, version: str) -> Path:
         """返回该版本组件的解压安装目录（跟随工作空间配置）。"""
@@ -125,7 +129,7 @@ class Component:
                         source=self.env_var,
                         home=home,
                         exe_path=str(exe),
-                        version_text=_probe_version(str(exe), self.version_args),
+                        version_text=_probe_version(str(exe), self.version_args, self.gui_app),
                     )
 
         # 2) 通过 PATH 中的可执行文件
@@ -150,7 +154,7 @@ class Component:
                         source="标准安装路径",
                         home=home,
                         exe_path=str(exe),
-                        version_text=_probe_version(str(exe), self.version_args),
+                        version_text=_probe_version(str(exe), self.version_args, self.gui_app),
                     )
 
         # 4) 扫描工作空间：环境变量被清掉后仍能认回本工具装过的组件
@@ -170,7 +174,7 @@ class Component:
                         source="工作空间",
                         home=str(home),
                         exe_path=str(exe),
-                        version_text=_probe_version(str(exe), self.version_args),
+                        version_text=_probe_version(str(exe), self.version_args, self.gui_app),
                     )
 
         return DetectResult(False)
@@ -187,9 +191,66 @@ class DetectResult:
     version_text: str = ""
 
 
-def _probe_version(exe: str, args: List[str]) -> str:
-    """调用可执行文件抓取版本号；失败返回空串。"""
+def _is_gui_program(exe: str) -> bool:
+    """判断可执行文件是否是 GUI 程序（执行它会弹窗口，不能用来探测版本）。
+
+    Windows：读 PE 头的 Subsystem 字段（2=WINDOWS_GUI）。
+    其它平台：按 AppImage / .app 这类明显特征启发式判断。
+    """
     try:
+        if CURRENT_OS == "Windows":
+            if not exe.lower().endswith(".exe"):
+                return False  # .cmd/.bat 由 shell 承载，按 CLI 处理
+            with open(exe, "rb") as f:
+                if f.read(2) != b"MZ":
+                    return False
+                f.seek(0x3C)
+                pe_off = int.from_bytes(f.read(4), "little")
+                f.seek(pe_off)
+                if f.read(4) != b"PE\0\0":
+                    return False
+                # Optional header 起于 pe_off+24；Subsystem 位于 optional+68
+                # （PE32 与 PE32+ 偏移恰好相同）
+                f.seek(pe_off + 24 + 68)
+                subsystem = int.from_bytes(f.read(2), "little")
+                return subsystem in (2, 9)  # IMAGE_SUBSYSTEM_WINDOWS_GUI / WINDOWS_CE_GUI
+        if exe.endswith(".AppImage"):
+            return True
+        if ".app/Contents/MacOS" in exe or exe.endswith(".app"):
+            return True
+    except Exception:
+        return False
+    return False
+
+
+# 版本探测缓存：(exe + args) -> (时间戳, 版本串)。
+# 卡片构造 / 安装完成后 / 工作空间变更都会触发检测，缓存避免同一程序被反复执行
+_VERSION_CACHE: Dict[str, Tuple[float, str]] = {}
+_VERSION_TTL = 300.0
+
+
+def _probe_version(exe: str, args: List[str], gui_app: bool = False) -> str:
+    """调用可执行文件抓取版本号；失败返回空串。
+
+    GUI 程序直接跳过：执行它会真的打开程序窗口，检测一次就弹一次，
+    直到超时被杀掉——这正是「安装后应用反复打开又关闭」的原因。
+    """
+    if not args:
+        return ""
+    if gui_app or _is_gui_program(exe):
+        return ""
+
+    key = f"{exe}|{' '.join(args)}"
+    now = time.time()
+    hit = _VERSION_CACHE.get(key)
+    if hit and now - hit[0] < _VERSION_TTL:
+        return hit[1]
+
+    try:
+        kwargs: Dict = {}
+        if CURRENT_OS == "Windows":
+            # 不给 CLI 程序创建控制台窗口（.cmd/.bat 尤其明显）
+            kwargs["creationflags"] = getattr(subprocess, "CREATE_NO_WINDOW", 0)
         proc = subprocess.run(
             [exe, *args],
             capture_output=True,
@@ -198,11 +259,14 @@ def _probe_version(exe: str, args: List[str]) -> str:
             # 在读取线程里抛 UnicodeDecodeError
             encoding="utf-8",
             errors="replace",
-            timeout=8,
+            timeout=5,
             check=False,
+            **kwargs,
         )
         out = (proc.stdout or "") + (proc.stderr or "")
         line = next((ln.strip() for ln in out.splitlines() if ln.strip()), "")
-        return line[:80]
+        line = line[:80]
+        _VERSION_CACHE[key] = (now, line)
+        return line
     except Exception:
         return ""

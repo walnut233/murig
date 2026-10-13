@@ -14,6 +14,7 @@ GitHub Release 直连在国内/加速器环境下经常很慢。这里提供"前
 from __future__ import annotations
 
 import json
+import os
 import time
 from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass
@@ -74,6 +75,7 @@ class MirrorSettings:
         self.mode: str = "auto"          # auto / direct / 预设 id / custom
         self.custom: str = ""            # 自定义模板，如 https://xxx.com/{url}
         self.fastest: Dict[str, str] = {}  # host -> mirror id
+        self.parts: int = 4              # 并行分块数；1 表示不分块（单线程流式）
 
     # ------------------------------------------------------------------
     @classmethod
@@ -86,8 +88,16 @@ class MirrorSettings:
                 s.mode = d.get("mode") or "auto"
                 s.custom = d.get("custom") or ""
                 s.fastest = dict(d.get("fastest") or {})
+                s.parts = int(d.get("parts") or 4)
         except Exception:
             pass
+        # 环境变量优先，方便临时对比：MURIG_DOWNLOAD_PARTS=1 关闭分块
+        env_parts = os.environ.get("MURIG_DOWNLOAD_PARTS")
+        if env_parts:
+            try:
+                s.parts = max(1, min(16, int(env_parts)))
+            except ValueError:
+                pass
         return s
 
     def save(self) -> None:
@@ -103,6 +113,7 @@ class MirrorSettings:
                 "mode": self.mode,
                 "custom": self.custom,
                 "fastest": self.fastest,
+                "parts": self.parts,
             }
             SETTINGS_FILE.write_text(
                 json.dumps(data, indent=2, ensure_ascii=False), encoding="utf-8")

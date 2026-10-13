@@ -473,7 +473,8 @@ class ComponentCard(QFrame):
         self.refresh_workspace_label()
         result = self.component.detect()
         if result.installed:
-            ver = result.version_text or "未知版本"
+            # GUI 应用不执行探测（否则会弹窗），版本留空属正常
+            ver = result.version_text or "已安装"
             where = result.source or "系统"
             self._set_status("ok", f"✓ 已配置（{where}） · {ver}")
             # 已可用 —— 禁用「仅配置环境变量」按钮

@@ -450,6 +450,16 @@ class WorkspaceDialog(QDialog):
         g.addWidget(QLabel("模板"), 1, 0)
         g.addWidget(self._custom_edit, 1, 1, 1, 2)
 
+        g.addWidget(QLabel("并行分块"), 3, 0)
+        self._parts_combo = QComboBox()
+        for n in (1, 2, 4, 8):
+            self._parts_combo.addItem(
+                "关闭（单线程）" if n == 1 else f"{n} 段", n)
+        pidx = self._parts_combo.findData(MIRRORS.parts)
+        self._parts_combo.setCurrentIndex(pidx if pidx >= 0 else 2)
+        self._parts_combo.currentIndexChanged.connect(self._on_parts_changed)
+        g.addWidget(self._parts_combo, 3, 1)
+
         self._probe_label = QLabel("未测速")
         self._probe_label.setObjectName("pathValue")
         self._probe_label.setWordWrap(True)
@@ -502,6 +512,10 @@ class WorkspaceDialog(QDialog):
         if MIRRORS.mode != "custom":
             return
         MIRRORS.custom = text.strip()
+        MIRRORS.save()
+
+    def _on_parts_changed(self) -> None:
+        MIRRORS.parts = int(self._parts_combo.currentData() or 1)
         MIRRORS.save()
 
     def _start_probe(self) -> None:

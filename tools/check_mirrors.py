@@ -11,7 +11,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-from murig.core.mirrors import MIRRORS, PROBE_URL, DIRECT, PRESETS  # noqa: E402
+from murig.core.mirrors import MIRRORS, PROBE_URL  # noqa: E402
 from murig.core.workers import DownloadWorker  # noqa: E402
 
 
