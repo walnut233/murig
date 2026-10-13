@@ -12,11 +12,10 @@ from typing import Callable, List, Optional
 from urllib.parse import urlparse
 
 from PySide6.QtCore import QEvent, QSize, Qt, Signal
-from PySide6.QtGui import QAction, QColor, QCursor, QFont, QFontMetrics
+from PySide6.QtGui import QAction, QCursor, QFont, QFontMetrics
 from PySide6.QtWidgets import (
-    QComboBox, QCompleter, QFileDialog, QFrame, QGraphicsDropShadowEffect,
-    QHBoxLayout, QLabel, QMenu, QMessageBox, QProgressBar, QPushButton,
-    QSizePolicy, QVBoxLayout,
+    QComboBox, QCompleter, QFileDialog, QFrame, QHBoxLayout, QLabel, QMenu,
+    QMessageBox, QProgressBar, QPushButton, QSizePolicy, QVBoxLayout,
 )
 
 from ..core.archive import extract_archive, extract_rpm
@@ -203,13 +202,9 @@ class ComponentCard(QFrame):
 
         self.setObjectName("card")
         self.setFrameShape(QFrame.NoFrame)
-
-        # 阴影
-        shadow = QGraphicsDropShadowEffect(self)
-        shadow.setBlurRadius(18)
-        shadow.setOffset(0, 3)
-        shadow.setColor(QColor(0, 0, 0, 40))
-        self.setGraphicsEffect(shadow)
+        # 说明：这里刻意不使用 QGraphicsDropShadowEffect —— Qt 图形特效会把卡片
+        # 整体渲染到带 alpha 的离屏表面，导致卡内文字的亚像素抗锯齿退化为灰度
+        # 抗锯齿（发灰、毛边）。层次感改为由 theme.qss 的边框 + 圆角表达。
 
         self._build_ui()
         self._detect_status()

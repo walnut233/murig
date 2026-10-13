@@ -34,9 +34,10 @@ QToolTip {
                 stop:0 #f7f9fc, stop:1 #e9edf5);
 }
 
+/* 注意：文字所在的背景必须是「不透明纯色」。
+   渐变 / 半透明背景会让 Windows 的亚像素抗锯齿退化为灰度抗锯齿，文字边缘发毛。 */
 #titleBar {
-    background: qlineargradient(x1:0, y1:0, x2:1, y2:0,
-                stop:0 #232a3a, stop:1 #38415a);
+    background: #2b3242;
     border-top-left-radius: 10px;
     border-top-right-radius: 10px;
 }
@@ -63,7 +64,7 @@ QToolTip {
 
 /* ---------------------------- 筛选 / 搜索 ---------------------------- */
 #filterBar {
-    background: rgba(255,255,255,0.72);
+    background: #f3f5fa;
     border-bottom: 1px solid #e4e9f2;
 }
 QPushButton#categoryChip {
@@ -110,12 +111,14 @@ QPushButton#categoryChip:checked {
 #cardsScroll { border: none; background: transparent; }
 #cardsWrap { background: transparent; }
 
+/* 层次感靠边框而非阴影：阴影特效会让卡内文字抗锯齿退化（见 widgets.py 注释） */
 #card {
     background: #ffffff;
-    border: 1px solid #e8ecf3;
+    border: 1px solid #e5e9f0;
+    border-bottom: 2px solid #dde3ee;
     border-radius: 14px;
 }
-#card:hover { border-color: #c7d2fe; }
+#card:hover { border-color: #c7d2fe; border-bottom-color: #a5b4fc; }
 #cardTitle {
     color: #1f2430;
     font-size: 14px;
