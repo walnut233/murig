@@ -3,7 +3,10 @@
 
 from __future__ import annotations
 
+import subprocess
 from pathlib import Path
+
+from .constants import CURRENT_OS
 
 
 def human_size(num: float) -> str:
@@ -18,3 +21,26 @@ def human_size(num: float) -> str:
 def ensure_dir(path: Path) -> None:
     """确保目录存在。"""
     path.mkdir(parents=True, exist_ok=True)
+
+
+def open_in_file_manager(path) -> bool:
+    """用系统文件管理器打开目录（资源管理器 / Finder / 桌面文件管理器）。
+
+    目录不存在时先创建（工作空间可能还没装过任何东西）。
+    非阻塞启动，成功返回 True。
+    """
+    p = Path(path)
+    try:
+        ensure_dir(p)
+    except Exception:
+        return False
+    try:
+        if CURRENT_OS == "Windows":
+            subprocess.Popen(["explorer", str(p)])
+        elif CURRENT_OS == "Darwin":
+            subprocess.Popen(["open", str(p)])
+        else:
+            subprocess.Popen(["xdg-open", str(p)])
+        return True
+    except Exception:
+        return False

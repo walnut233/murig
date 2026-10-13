@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import json
 import sys
+from pathlib import Path
 from typing import Dict, List, Optional
 
 from PySide6.QtCore import QEvent, QPoint, QSize, Qt
@@ -21,6 +22,7 @@ from ..core.constants import (
     APP_NAME, APP_VERSION, CATEGORIES, CATEGORY_ORDER, CONFIG_DIR,
     CURRENT_OS, MACHINE, SETTINGS_FILE,
 )
+from ..core.utils import open_in_file_manager
 from ..core.workspace import WS
 from .dialogs import AboutDialog, DonateDialog, WorkspaceDialog
 from .icons import (
@@ -140,6 +142,16 @@ class MainWindow(QMainWindow):
         self.btn_workspace.setToolTip("配置全局 / 分类 / 单组件的安装目录")
         self.btn_workspace.clicked.connect(self._on_workspace_clicked)
         tb.addWidget(self.btn_workspace)
+
+        # 打开工作空间目录（系统文件管理器）
+        self.btn_open_dir = QPushButton("打开目录")
+        self.btn_open_dir.setIcon(folder_icon(14, BAR_FG))
+        self.btn_open_dir.setIconSize(QSize(14, 14))
+        self.btn_open_dir.setObjectName("iconBtn")
+        self.btn_open_dir.setCursor(QCursor(Qt.PointingHandCursor))
+        self.btn_open_dir.setToolTip("在系统文件管理器中打开当前工作空间目录")
+        self.btn_open_dir.clicked.connect(self._on_open_dir_clicked)
+        tb.addWidget(self.btn_open_dir)
 
         # 捐赠（不在 README 中提及）
         self.btn_donate = QPushButton()
@@ -429,6 +441,14 @@ class MainWindow(QMainWindow):
             for card in self.cards:
                 card._detect_status()
             self.refresh_status_bar()
+
+    # ------------------------------------------------------------------
+    def _on_open_dir_clicked(self) -> None:
+        root = Path(WS.global_ws) if WS.global_ws else CONFIG_DIR
+        if open_in_file_manager(root):
+            self._append_log("ok", f"已打开工作空间目录：{root}")
+        else:
+            self._append_log("warn", f"打开目录失败：{root}")
 
     # ------------------------------------------------------------------
     def refresh_status_bar(self) -> None:

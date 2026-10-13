@@ -15,6 +15,7 @@ from PySide6.QtWidgets import (
 
 from ..core.constants import CATEGORIES, CATEGORY_ORDER, CONFIG_DIR
 from ..core.mirrors import MIRRORS, PRESETS
+from ..core.utils import open_in_file_manager
 from ..core.workers import MirrorProbeWorker
 from ..core.workspace import WS
 from ..resources import assets_dir
@@ -384,6 +385,13 @@ class WorkspaceDialog(QDialog):
         btn.clicked.connect(lambda: self._reset(
             lambda: WS.set_global(None), "全局默认工作空间"))
         g.addWidget(btn, 0, 3)
+        btn = QPushButton("打开")
+        btn.setObjectName("secondaryBtn")
+        btn.setCursor(QCursor(Qt.PointingHandCursor))
+        btn.setToolTip("在系统文件管理器中打开该目录")
+        btn.clicked.connect(
+            lambda: self._open_dir(WS.global_ws or CONFIG_DIR))
+        g.addWidget(btn, 0, 4)
         v.addWidget(grp)
 
         # 分类工作空间
@@ -413,6 +421,13 @@ class WorkspaceDialog(QDialog):
             btn.clicked.connect(lambda _=False, c=cat: self._reset(
                 lambda c=c: WS.set_category(c, None), f"分类「{CATEGORIES[c]}」工作空间"))
             g.addWidget(btn, row, 3)
+            btn = QPushButton("打开")
+            btn.setObjectName("secondaryBtn")
+            btn.setCursor(QCursor(Qt.PointingHandCursor))
+            btn.setToolTip("在系统文件管理器中打开该目录")
+            btn.clicked.connect(lambda _=False, c=cat: self._open_dir(
+                WS.categories.get(c) or WS.global_ws or CONFIG_DIR))
+            g.addWidget(btn, row, 4)
         v.addWidget(grp)
 
         # 组件自定义覆盖
@@ -496,6 +511,15 @@ class WorkspaceDialog(QDialog):
         self._refresh()
         if self._log_cb:
             self._log_cb("ok", f"工作空间已恢复默认：{what}")
+
+    # ------------------------------------------------------------------
+    def _open_dir(self, path: str) -> None:
+        """在系统文件管理器中打开目录（不存在会先创建）。"""
+        if open_in_file_manager(path):
+            if self._log_cb:
+                self._log_cb("ok", f"已打开目录：{path}")
+        elif self._log_cb:
+            self._log_cb("warn", f"打开目录失败：{path}")
 
     # ------------------------------------------------------------------
     # 下载镜像
