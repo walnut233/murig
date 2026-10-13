@@ -3,17 +3,19 @@
 
 from __future__ import annotations
 
+from functools import partial
 from typing import Callable, Dict, List, Optional
 
 from PySide6.QtCore import QObject, QThread, Signal
 
 from ..core.constants import CURRENT_OS, IS_ARM
 from ..core.models import Component, ComponentVersion
+from .cache import cached_versions
 from .fetch import *  # noqa: F401,F403  版本抓取函数
 from .urls import *  # noqa: F401,F403  URL 构造函数
 
 
-FETCHERS: Dict[str, Callable[[], List[ComponentVersion]]] = {
+_RAW_FETCHERS: Dict[str, Callable[[], List[ComponentVersion]]] = {
     "jdk": fetch_jdk_versions,
     "maven": fetch_maven_versions,
     "tomcat": fetch_tomcat_versions,
@@ -40,6 +42,11 @@ FETCHERS: Dict[str, Callable[[], List[ComponentVersion]]] = {
     "oceanbase": fetch_oceanbase_versions,
     "kingbase": fetch_kingbase_versions,
     "yashandb": fetch_yashandb_versions,
+}
+
+# 统一套一层本地缓存：抓取失败（限流/断网/代理拦截）时回退最近一次成功结果
+FETCHERS: Dict[str, Callable[[], List[ComponentVersion]]] = {
+    key: partial(cached_versions, key, fn) for key, fn in _RAW_FETCHERS.items()
 }
 
 

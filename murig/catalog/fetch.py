@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import json
+import os
 import re as _re
 from pathlib import PurePosixPath
 from typing import Dict, List, Optional
@@ -18,6 +19,7 @@ from .urls import *  # noqa: F401,F403  各组件 URL 构造函数
 __all__ = [
     "_get", "_sort_semver_desc", "_mysql_mac_filename", "_fetch_apache_listing",
     "_MYSQL_PORTABLE_SERIES",
+    "RateLimitError", "_github_releases", "_github_tags", "_github_asset_names",
     "fetch_jdk_versions", "fetch_maven_versions", "fetch_tomcat_versions",
     "fetch_python_versions", "fetch_node_versions", "fetch_mysql_versions",
     "fetch_git_versions", "fetch_conda_versions", "fetch_redis_versions",
@@ -30,14 +32,33 @@ __all__ = [
 ]
 
 
-def _get(url: str, timeout: int = 10) -> requests.Response:
+class RateLimitError(RuntimeError):
+    """GitHub API 限流 / 代理拦截导致的 403、429。"""
+
+
+def _http_error(url: str, exc: Exception, code: int) -> Exception:
+    """把 4xx 转成带解决建议的异常（403/429 额外区分 API 限流）。"""
+    if "api.github.com" in url:
+        tip = "（可设置 GITHUB_TOKEN 提高配额，或设置 MURIG_GITHUB_API_BASE 走镜像）"
+    else:
+        tip = ""
+    if code == 429:
+        return RateLimitError(f"429 请求过于频繁，已被限流：{url}{tip}")
+    if code == 403:
+        return RateLimitError(f"403 被拒绝（多为 API 限流或代理拦截）：{url}{tip}")
+    return exc
+
+
+def _get(url: str, timeout: int = 10,
+         headers: Optional[Dict[str, str]] = None) -> requests.Response:
     """带自动重试与 SSL 降级的 GET 请求。
 
     - 网络抖动/临时错误：最多重试 3 次，指数退避（1s, 2s）
     - SSL 错误（企业代理 MITM / 系统证书缺失等）：最后一次尝试关闭 SSL 校验
+    - 4xx（401/403/404/429）直接抛出不再重试：重试只会浪费本就紧张的配额
     """
     import time as _time
-    headers = {"User-Agent": "MuRig"}
+    headers = headers or {"User-Agent": "MuRig"}
     last_exc: Optional[Exception] = None
     for attempt in range(3):
         try:
@@ -50,6 +71,11 @@ def _get(url: str, timeout: int = 10) -> requests.Response:
                 r = requests.get(url, timeout=timeout, headers=headers, verify=False)
             r.raise_for_status()
             return r
+        except requests.exceptions.HTTPError as e:
+            code = getattr(getattr(e, "response", None), "status_code", 0)
+            if code in (401, 403, 404, 429):
+                raise _http_error(url, e, code)
+            last_exc = e
         except requests.exceptions.SSLError as e:
             last_exc = e
             # SSL 错误直接进入下一次尝试
@@ -59,6 +85,87 @@ def _get(url: str, timeout: int = 10) -> requests.Response:
             _time.sleep(1 << attempt)  # 1s, 2s
     assert last_exc is not None
     raise last_exc
+
+
+# ---------------------------------------------------------------------------
+# GitHub：匿名 API 只有 60 次/小时/IP，共享出口 IP（加速器 / 代理 / 公司网）
+# 必然被打满。因此提供三级策略：
+#   1) 带 Token 请求（5000 次/小时）+ 可配置镜像 MURIG_GITHUB_API_BASE
+#   2) API 失败时绕开 API：releases.atom 取 tag，expanded_assets 取附件名
+#   3) 仍失败则由 registry 的缓存层回退到本地缓存/内置清单
+# ---------------------------------------------------------------------------
+def _github_headers() -> Dict[str, str]:
+    headers = {
+        "User-Agent": "MuRig",
+        "Accept": "application/vnd.github+json",
+        "X-GitHub-Api-Version": "2022-11-28",
+    }
+    token = (os.environ.get("MURIG_GITHUB_TOKEN")
+             or os.environ.get("GITHUB_TOKEN") or "").strip()
+    if token:
+        headers["Authorization"] = f"Bearer {token}"
+    return headers
+
+
+def _github_json(path: str, timeout: int = 12):
+    """请求 GitHub API（支持 Token 与镜像地址）。"""
+    base = (os.environ.get("MURIG_GITHUB_API_BASE")
+            or "https://api.github.com").rstrip("/")
+    return _get(base + path, timeout=timeout, headers=_github_headers()).json()
+
+
+def _github_asset_names(owner: str, repo: str, tag: str) -> List[str]:
+    """从 GitHub 的 expanded_assets 片段读取某 release 的附件名（不消耗 API 配额）。"""
+    try:
+        html = _get(
+            f"https://github.com/{owner}/{repo}/releases/expanded_assets/{tag}",
+            timeout=10,
+        ).text
+    except Exception:
+        return []
+    return _re.findall(r'href="[^"]*?/releases/download/[^"]*?/([^"/]+)"', html)
+
+
+def _github_releases_fallback(owner: str, repo: str, limit: int) -> List[dict]:
+    """API 不可用时的回退：releases.atom 取 tag + expanded_assets 取附件名。"""
+    try:
+        atom = _get(f"https://github.com/{owner}/{repo}/releases.atom", timeout=15).text
+    except Exception as e:
+        raise RuntimeError(f"GitHub 访问失败（API 与 releases.atom 均不可用）：{e}")
+    tags = _re.findall(r"<id>tag:github\.com,2008:Repository/\d+/(.+?)</id>", atom)
+    if not tags:
+        raise RuntimeError(f"无法解析 {owner}/{repo} 的 releases.atom")
+    result: List[dict] = []
+    # 每个 tag 需要一次页面请求，这里取前 30 个（足够覆盖近几个大版本，
+    # 也避免退化为上百次请求）
+    for tag in tags[:min(limit, 30)]:
+        names = _github_asset_names(owner, repo, tag)
+        result.append({
+            "tag_name": tag,
+            "assets": [{
+                "name": n,
+                "browser_download_url":
+                    f"https://github.com/{owner}/{repo}/releases/download/{tag}/{n}",
+            } for n in names],
+        })
+    return result
+
+
+def _github_releases(owner: str, repo: str, per_page: int = 30) -> List[dict]:
+    """GitHub Releases 列表；API 限流/失败时自动回退到非 API 通道。"""
+    try:
+        return _github_json(f"/repos/{owner}/{repo}/releases?per_page={per_page}")
+    except Exception:
+        return _github_releases_fallback(owner, repo, per_page)
+
+
+def _github_tags(owner: str, repo: str, per_page: int = 60) -> List[dict]:
+    """GitHub Tags 列表；API 不可用时回退到 releases.atom 的 tag。"""
+    try:
+        return _github_json(f"/repos/{owner}/{repo}/tags?per_page={per_page}")
+    except Exception:
+        fallback = _github_releases_fallback(owner, repo, per_page)
+        return [{"name": r["tag_name"]} for r in fallback]
 
 
 def _sort_semver_desc(vs) -> list:
@@ -225,8 +332,8 @@ def fetch_mysql_versions() -> List[ComponentVersion]:
 
 
 def fetch_git_versions() -> List[ComponentVersion]:
-    """Git for Windows Releases API。"""
-    data = _get("https://api.github.com/repos/git-for-windows/git/releases?per_page=20").json()
+    """Git for Windows Releases（API 限流时回退 releases.atom）。"""
+    data = _github_releases("git-for-windows", "git", 20)
     versions: List[str] = []
     for rel in data:
         tag = rel.get("tag_name", "")
@@ -279,9 +386,7 @@ def fetch_redis_versions() -> List[ComponentVersion]:
 
 def fetch_es_versions() -> List[ComponentVersion]:
     """Elasticsearch GitHub Tags（7.x 及以上）。"""
-    data = _get(
-        "https://api.github.com/repos/elastic/elasticsearch/tags?per_page=60"
-    ).json()
+    data = _github_tags("elastic", "elasticsearch", 60)
     vs: List[str] = []
     for t in data:
         m = _re.fullmatch(r"v?(\d+\.\d+\.\d+)", t.get("name", ""))
@@ -294,10 +399,15 @@ def fetch_es_versions() -> List[ComponentVersion]:
 
 def fetch_ollama_versions() -> List[ComponentVersion]:
     """Ollama GitHub Releases；只收录三平台便携包齐全（Linux 仍为 tgz）的版本。"""
-    data = _get(
-        "https://api.github.com/repos/ollama/ollama/releases?per_page=100"
-    ).json()
-    required = {"ollama-windows-amd64.zip", "Ollama-darwin.zip", "ollama-linux-amd64.tgz"}
+    data = _github_releases("ollama", "ollama", 100)
+    # 上游自 v0.13 起 Linux 包改用 .tar.zst（本工具未内置 zstd 解压），
+    # 因此不再要求"三平台齐全"，只要求当前平台的分发包存在
+    required_by_os = {
+        "Windows": {"ollama-windows-amd64.zip"},
+        "Darwin": {"Ollama-darwin.zip"},
+        "Linux": {"ollama-linux-amd64.tgz"},
+    }
+    required = required_by_os.get(CURRENT_OS, {"ollama-windows-amd64.zip"})
     vs: List[str] = []
     for rel in data:
         m = _re.fullmatch(r"v(\d+\.\d+\.\d+)", rel.get("tag_name", ""))
@@ -307,6 +417,10 @@ def fetch_ollama_versions() -> List[ComponentVersion]:
         if required <= assets:
             vs.append(m.group(1))
     if not vs:
+        if CURRENT_OS == "Linux":
+            raise RuntimeError(
+                "Ollama 版本列表为空：上游 Linux 包已改为 .tar.zst，本工具暂不支持 zstd"
+            )
         raise RuntimeError("Ollama 版本列表为空")
     return [_tgz_cv(v, _ollama_urls(v)) for v in vs[:12]]
 
@@ -385,9 +499,7 @@ def fetch_claude_code_versions() -> List[ComponentVersion]:
 
 def fetch_ccswitch_versions() -> List[ComponentVersion]:
     """CC-Switch GitHub Releases；要求 Win/macOS/Linux 三件套齐全。"""
-    data = _get(
-        "https://api.github.com/repos/farion1231/cc-switch/releases?per_page=30"
-    ).json()
+    data = _github_releases("farion1231", "cc-switch", 30)
     result: List[ComponentVersion] = []
     for rel in data:
         m = _re.fullmatch(r"v(\d+\.\d+\.\d+)", rel.get("tag_name", ""))
@@ -484,9 +596,7 @@ def fetch_dameng_versions() -> List[ComponentVersion]:
 
 def fetch_oceanbase_versions() -> List[ComponentVersion]:
     """OceanBase CE GitHub Releases：取主服务 el7 x86_64 RPM。"""
-    data = _get(
-        "https://api.github.com/repos/oceanbase/oceanbase/releases?per_page=30"
-    ).json()
+    data = _github_releases("oceanbase", "oceanbase", 30)
     result: List[ComponentVersion] = []
     seen: set = set()
     for rel in data:
