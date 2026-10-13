@@ -19,6 +19,11 @@ def assets_dir() -> Path:
     return app_root() / "assets"
 
 
+def icons_dir() -> Path:
+    """界面矢量图标目录（assets/icons/*.svg）。"""
+    return assets_dir() / "icons"
+
+
 def icon_path() -> Path:
     """应用图标（窗口/任务栏/打包后的 exe 均使用）。"""
     return assets_dir() / "icon.ico"
