@@ -791,6 +791,39 @@ class ComponentCard(QFrame):
             self._detect_status()
 
     # ------------------------------------------------------------------
+    def _warn_stale_path(self, name: str, stale_dirs, new_bin: Path) -> None:
+        """旧版本仍占着系统 PATH：弹窗提示，并可一键打开系统环境变量设置。
+
+        Windows 合并 PATH 时系统变量在前，用户新写的版本会被旧版压住，
+        只写日志容易被忽略，所以这里额外弹一次。
+        """
+        box = QMessageBox(self)
+        box.setIcon(QMessageBox.Warning)
+        box.setWindowTitle(f"环境变量提示：{name} 检测到旧版本")
+        box.setText(
+            f"已把 {name} 的新版本写入用户环境变量，但系统 PATH 中仍存在旧版本：\n\n"
+            + "\n".join(f"• {d}" for d in stale_dirs)
+        )
+        box.setInformativeText(
+            f"Windows 合并 PATH 时系统变量在前，新开的终端可能仍优先使用旧版本"
+            f"（本次写入：{new_bin}）。\n\n"
+            "建议从「系统环境变量」的 Path 中移除上面的旧条目（需管理员权限），"
+            "或把新版本目录排到系统变量之前。"
+        )
+        got_it = box.addButton("我知道了", QMessageBox.AcceptRole)
+        edit_btn = None
+        if CURRENT_OS == "Windows":
+            edit_btn = box.addButton("打开环境变量设置", QMessageBox.ActionRole)
+        box.setDefaultButton(got_it)
+        box.exec()
+        if edit_btn is not None and box.clickedButton() is edit_btn:
+            try:
+                subprocess.Popen(["rundll32", "sysdm.cpl,EditEnvironmentVariables"])
+                self._log("info", "已打开系统环境变量设置；修改系统 PATH 需管理员权限。")
+            except Exception as exc:
+                self._log("warn", f"打开环境变量设置失败，请手动打开：{exc}")
+
+    # ------------------------------------------------------------------
     def _run_installer(self, installer_path: Path, target_dir: Path) -> None:
         """静默运行安装器（用于 Miniconda 之类）。"""
         comp = self.component
@@ -1001,7 +1034,7 @@ class ComponentCard(QFrame):
                 self._log("warn", "请打开新的终端或执行 `source ~/.zshrc` 让环境变量生效。")
             else:
                 # Windows 合并 PATH 时系统变量在前：若系统里还装着旧版本，
-                # 新开的终端会优先用旧版。这里提示用户处理
+                # 新开的终端会优先用旧版。日志留痕 + 弹窗提醒用户处理
                 stale = EnvManager.system_path_exec_dirs(comp.exec_name)
                 if stale:
                     self._log(
@@ -1010,5 +1043,6 @@ class ComponentCard(QFrame):
                         "；新开的终端可能优先使用旧版本，建议从系统 PATH 移除旧条目"
                         "（需管理员权限）",
                     )
+                    self._warn_stale_path(comp.display_name, stale, bin_dir)
         except Exception as exc:
             self._log("error", f"环境变量配置失败：{exc}")
