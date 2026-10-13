@@ -435,6 +435,8 @@ class ComponentCard(QFrame):
 
         # 弹出前刷新状态：清除项只在有覆盖时可用
         menu.aboutToShow.connect(self._refresh_more_menu)
+        # 菜单项悬停时显示各自的 tooltip（QMenu 默认不显示）
+        menu.setToolTipsVisible(True)
         self.btn_more.setMenu(menu)
 
         self.btn_cancel = QPushButton("取消")
@@ -557,11 +559,12 @@ class ComponentCard(QFrame):
             ver = result.version_text or "已安装"
             where = result.source or "系统"
             self._set_status("ok", f"✓ 已配置（{where}） · {ver}")
-            # 已可用 —— 禁用「仅配置环境变量」按钮
-            self.btn_configure.setEnabled(False)
+            # 已配置时「配置环境变量」保持可点：点击后在日志里明确提示
+            # 无需重复配置，比置灰成不可选又没有任何解释更易理解
+            self.btn_configure.setEnabled(True)
             self.btn_configure.setToolTip(
                 f"系统已能检测到 {self.component.display_name}"
-                f"（{result.exe_path or where}），无需再次配置。"
+                f"（{result.exe_path or where}）；点击不会重复写入，仅给出提示。"
             )
             return
 
@@ -1101,7 +1104,17 @@ class ComponentCard(QFrame):
         """仅配置环境变量：从本地已存在的安装目录中选择最新一个。
 
         扫描顺序为当前工作空间优先、默认根兜底，旧位置的安装仍可被配置。
+        已配置（系统已能检测到可执行文件）时不重复写入，给出提示即可。
         """
+        result = self.component.detect()
+        if result.installed:
+            self._log(
+                "info",
+                f"{self.component.display_name} 已能被系统检测到"
+                f"（{result.exe_path or result.source or '系统'}），"
+                "无需再次配置环境变量。",
+            )
+            return
         for root in WS.roots_for(self.component.key, self.component.category):
             install_root = root / self.component.key
             if not install_root.exists():
