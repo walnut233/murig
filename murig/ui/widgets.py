@@ -709,6 +709,16 @@ class ComponentCard(QFrame):
             self._configure_env(final)
             for note in self.component.post_notes:
                 self._log("warn", note)
+
+            # 安装/解压成功后，下载的安装包不再需要，自动清理腾出磁盘空间
+            # （bin/exe 类在安装时已 move 走，不存在残留；失败时保留便于重试）
+            if path.exists():
+                try:
+                    size = path.stat().st_size
+                    path.unlink()
+                    self._log("ok", f"已清理安装包：{path.name}（{human_size(size)}）")
+                except OSError as exc:
+                    self._log("warn", f"安装包清理失败（可稍后在 downloads 目录手动删除）：{exc}")
         except Exception as exc:
             self._log("error", f"安装/配置失败：{exc}\n{traceback.format_exc()}")
         finally:

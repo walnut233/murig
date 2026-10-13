@@ -9,13 +9,13 @@ from PySide6.QtCore import Qt, QUrl
 from PySide6.QtGui import QCursor, QDesktopServices, QPixmap
 from PySide6.QtWidgets import (
     QApplication, QComboBox, QDialog, QFileDialog, QFrame, QGridLayout,
-    QGroupBox, QHBoxLayout, QLabel, QLineEdit, QPushButton, QScrollArea,
-    QVBoxLayout, QWidget,
+    QGroupBox, QHBoxLayout, QLabel, QLineEdit, QMessageBox, QPushButton,
+    QScrollArea, QVBoxLayout, QWidget,
 )
 
 from ..core.constants import CATEGORIES, CATEGORY_ORDER, CONFIG_DIR
 from ..core.mirrors import MIRRORS, PRESETS
-from ..core.utils import open_in_file_manager
+from ..core.utils import human_size, open_in_file_manager
 from ..core.workers import MirrorProbeWorker
 from ..core.workspace import WS
 from ..resources import assets_dir
@@ -508,6 +508,23 @@ class WorkspaceDialog(QDialog):
         g.addWidget(self._probe_label, 2, 1, 1, 2)
         v.addWidget(grp)
 
+        # 安装包清理
+        grp = QGroupBox("安装包清理（组件解压安装后压缩包即不再需要）")
+        g = QGridLayout(grp)
+        g.setColumnStretch(0, 1)
+        self._cache_label = QLabel()
+        self._cache_label.setObjectName("pathValue")
+        self._cache_label.setWordWrap(True)
+        g.addWidget(self._cache_label, 0, 0)
+        self._clean_btn = QPushButton("立即清理")
+        self._clean_btn.setObjectName("secondaryBtn")
+        self._clean_btn.setCursor(QCursor(Qt.PointingHandCursor))
+        self._clean_btn.setToolTip("删除所有工作空间 downloads 目录里的安装包，已安装组件不受影响")
+        self._clean_btn.clicked.connect(self._clean_downloads)
+        g.addWidget(self._clean_btn, 0, 1)
+        self._refresh_cache_label()
+        v.addWidget(grp)
+
         v.addStretch(1)
         scroll.setWidget(body)
         outer.addWidget(scroll, stretch=1)
@@ -538,6 +555,53 @@ class WorkspaceDialog(QDialog):
         self._refresh()
         if self._log_cb:
             self._log_cb("ok", f"工作空间已恢复默认：{what}")
+
+    # ------------------------------------------------------------------
+    # 安装包清理
+    # ------------------------------------------------------------------
+    def _refresh_cache_label(self) -> None:
+        files = [f for f in WS.download_cache_files() if f.exists()]
+        if files:
+            try:
+                total = sum(f.stat().st_size for f in files)
+            except OSError:
+                total = 0
+            self._cache_label.setText(
+                f"检测到 {len(files)} 个安装包，共 {human_size(total)}"
+                "（各工作空间的 downloads 目录）"
+            )
+            self._clean_btn.setEnabled(True)
+        else:
+            self._cache_label.setText("没有可清理的安装包")
+            self._clean_btn.setEnabled(False)
+
+    def _clean_downloads(self) -> None:
+        files = [f for f in WS.download_cache_files() if f.exists()]
+        if not files:
+            return
+        total = sum(f.stat().st_size for f in files)
+        ret = QMessageBox.question(
+            self,
+            "清理安装包",
+            f"确定删除 {len(files)} 个安装包（共 {human_size(total)}）吗？\n\n"
+            "已解压安装的组件不受影响；正在下载/安装的任务请先完成。",
+        )
+        if ret != QMessageBox.Yes:
+            return
+        ok, freed, failed = 0, 0, 0
+        for f in files:
+            try:
+                freed += f.stat().st_size
+                f.unlink()
+                ok += 1
+            except OSError:
+                failed += 1
+        if self._log_cb:
+            msg = f"已清理 {ok} 个安装包，释放 {human_size(freed)}"
+            if failed:
+                msg += f"；{failed} 个文件被占用，删除失败（可稍后重试）"
+            self._log_cb("ok" if not failed else "warn", msg)
+        self._refresh_cache_label()
 
     # ------------------------------------------------------------------
     def _open_dir(self, path: str) -> None:

@@ -111,6 +111,37 @@ class WorkspaceManager:
             self.components.pop(key, None)
         self.save()
 
+    # ------------------------------------------------------------------
+    def download_cache_files(self) -> List[Path]:
+        """收集所有工作空间下组件 downloads 目录里的安装包（清理用）。
+
+        覆盖全局 / 分类 / 组件覆盖 / 内置默认四类根，去重后逐根扫描
+        `<root>/<组件>/downloads/<文件>`。
+        """
+        roots: List[Path] = [CONFIG_DIR]
+        if self.global_ws:
+            roots.append(Path(self.global_ws))
+        roots.extend(Path(p) for p in self.categories.values() if p)
+        roots.extend(Path(p) for p in self.components.values() if p)
+
+        files: List[Path] = []
+        seen: set = set()
+        for root in roots:
+            try:
+                rp = root.resolve()
+            except OSError:
+                continue
+            if rp in seen or not root.exists():
+                seen.add(rp)
+                continue
+            seen.add(rp)
+            for dl_dir in root.glob("*/downloads"):
+                if dl_dir.is_dir():
+                    for f in dl_dir.iterdir():
+                        if f.is_file():
+                            files.append(f)
+        return files
+
 
 # 全局单例：启动时加载一次，UI 修改后即时 save
 WS = WorkspaceManager.load()
