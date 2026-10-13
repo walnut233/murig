@@ -489,8 +489,11 @@ class WorkspaceDialog(QDialog):
         self._custom_edit = QLineEdit(MIRRORS.custom)
         self._custom_edit.setPlaceholderText("自定义镜像模板，如 https://your-mirror.com/{url}")
         self._custom_edit.textChanged.connect(self._on_custom_changed)
-        self._custom_edit.setEnabled(MIRRORS.mode == "custom")
-        g.addWidget(QLabel("模板"), 1, 0)
+        # 仅在选择「自定义…」时显示模板行
+        self._tmpl_label = QLabel("模板")
+        self._tmpl_label.setVisible(MIRRORS.mode == "custom")
+        self._custom_edit.setVisible(MIRRORS.mode == "custom")
+        g.addWidget(self._tmpl_label, 1, 0)
         g.addWidget(self._custom_edit, 1, 1, 1, 2)
 
         g.addWidget(QLabel("并行分块"), 3, 0)
@@ -503,9 +506,11 @@ class WorkspaceDialog(QDialog):
         self._parts_combo.currentIndexChanged.connect(self._on_parts_changed)
         g.addWidget(self._parts_combo, 3, 1)
 
-        self._probe_label = QLabel("未测速")
+        # 未测速时不占位显示，点「测速」或出结果后才出现
+        self._probe_label = QLabel()
         self._probe_label.setObjectName("pathValue")
         self._probe_label.setWordWrap(True)
+        self._probe_label.setVisible(False)
         g.addWidget(self._probe_label, 2, 1, 1, 2)
         v.addWidget(grp)
 
@@ -651,7 +656,8 @@ class WorkspaceDialog(QDialog):
         mode = self._mirror_combo.currentData() or "auto"
         MIRRORS.mode = mode
         MIRRORS.save()
-        self._custom_edit.setEnabled(mode == "custom")
+        self._tmpl_label.setVisible(mode == "custom")
+        self._custom_edit.setVisible(mode == "custom")
         if self._log_cb:
             self._log_cb("ok", f"下载通道已切换为：{self._mirror_combo.currentText()}")
 
@@ -667,7 +673,8 @@ class WorkspaceDialog(QDialog):
 
     def _start_probe(self) -> None:
         self._probe_btn.setEnabled(False)
-        self._probe_label.setText("测速中…（各通道抽样下载 384 KB）")
+        self._probe_label.setVisible(True)
+        self._probe_label.setText("测速中…（各通道抽样下载 512 KB）")
         self._probe_worker = MirrorProbeWorker(parent=self)
         self._probe_worker.done.connect(self._on_probe_done)
         self._probe_worker.start()
