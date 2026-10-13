@@ -25,7 +25,7 @@ from ..core.constants import CURRENT_OS
 from ..core.env import EnvManager
 from ..core.settings import INSTALL
 from ..core.models import Component, ComponentVersion
-from ..core.utils import ensure_dir, human_size
+from ..core.utils import ensure_dir, human_size, reveal_file
 from ..core.workers import CommandWorker, DownloadWorker
 from ..core.workspace import WS
 
@@ -412,7 +412,8 @@ class ComponentCard(QFrame):
         # 仅下载：把安装包留在 downloads 目录，不解压、不配置环境变量
         self.btn_download = QAction("仅下载", self)
         self.btn_download.setToolTip(
-            "只下载安装包到工作空间的 downloads 目录，不解压、不配置环境变量"
+            "只下载安装包到 downloads 目录（下载完成后自动打开该目录），"
+            "不解压、不配置环境变量"
         )
         self.btn_download.triggered.connect(self.on_download_only_clicked)
         if self.component.npm_package:
@@ -798,6 +799,11 @@ class ComponentCard(QFrame):
             except OSError:
                 size = "未知大小"
             self._log("ok", f"已下载（未解压）：{path}（{size}）")
+            # 下载完直接定位到文件：省得用户自己去翻 downloads 目录
+            if reveal_file(path):
+                self._log("info", f"已打开下载目录：{path.parent}")
+            else:
+                self._log("warn", f"打开下载目录失败，请手动打开：{path.parent}")
             self._log("info", "需要安装时点「下载并安装」——会自动复用已下载的安装包；"
                               "已下载的包可在「设置」里一键清理。")
             self.btn_install.setEnabled(True)
