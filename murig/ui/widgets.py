@@ -260,6 +260,8 @@ class ComponentCard(QFrame):
         self._extracted_path: Optional[Path] = None
         # 本次任务是「仅下载」（不解压、不配置、保留安装包）
         self._download_only: bool = False
+        # 本次安装是否自动配置环境变量（安装前询问，默认取全局安装选项）
+        self._task_auto_env: bool = INSTALL.auto_env
 
         self.setObjectName("card")
         self.setFrameShape(QFrame.NoFrame)
@@ -652,8 +654,49 @@ class ComponentCard(QFrame):
         """只下载安装包，不做解压安装与环境变量配置。"""
         self.on_install_clicked(download_only=True)
 
+    def _ask_auto_env(self, cv: ComponentVersion) -> Optional[bool]:
+        """安装前确认是否自动配置环境变量。
+
+        勾选状态默认为「设置 → 安装选项」的值，用户可在本次安装单独调整。
+        返回 True / False 表示用户的选择；None 表示用户取消了安装。
+        """
+        box = QMessageBox(self)
+        box.setIcon(QMessageBox.Question)
+        box.setWindowTitle(f"安装选项：{self.component.display_name}")
+        box.setText(f"准备安装 {self.component.display_name} {cv.version}")
+        box.setInformativeText(
+            "自动配置环境变量会写入 XXX_HOME 与 PATH；不配置时只下载解压，"
+            "之后可在卡片「更多 → 配置环境变量」手动写入。\n\n"
+            f"默认值取自「设置」→ 安装选项（当前："
+            f"{'自动配置' if INSTALL.auto_env else '不自动配置'}）。"
+        )
+        cb = ToggleSwitch("安装完成后自动配置环境变量")
+        cb.setChecked(INSTALL.auto_env)
+        box.setCheckBox(cb)
+        ok_btn = box.addButton("开始安装", QMessageBox.AcceptRole)
+        box.addButton("取消", QMessageBox.RejectRole)
+        box.setDefaultButton(ok_btn)
+        box.exec()
+        if box.clickedButton() is not ok_btn:
+            return None
+        return cb.isChecked()
+
+    def _auto_env_enabled(self) -> bool:
+        """本次安装是否自动配置环境变量：以安装前的选择为准。"""
+        return getattr(self, "_task_auto_env", INSTALL.auto_env)
+
     def on_install_clicked(self, download_only: bool = False) -> None:
         cv = self._current_version()
+
+        if download_only:
+            # 仅下载不涉及环境变量，无需询问
+            self._task_auto_env = False
+        else:
+            choice = self._ask_auto_env(cv)
+            if choice is None:
+                return
+            self._task_auto_env = choice
+
         self._download_only = download_only
 
         # npm 便携安装模式（如 Claude Code）：不走下载流程
@@ -820,7 +863,7 @@ class ComponentCard(QFrame):
             self._extracted_path = final
             # 配置环境变量是附加项：默认只在用户开启自动配置时才写入
             # （写入 XXX_HOME / PATH 会改动系统配置，按需进行）
-            if INSTALL.auto_env:
+            if self._auto_env_enabled():
                 self._configure_env(final)
             else:
                 self._log(
@@ -1010,7 +1053,7 @@ class ComponentCard(QFrame):
         self.btn_cancel.setVisible(False)
         self._log("ok", f"npm 安装完成：{final}")
         self._extracted_path = final
-        if INSTALL.auto_env:
+        if self._auto_env_enabled():
             self._configure_env(final)
         else:
             self._log("info", "已跳过环境变量配置；如需使用命令行，点击卡片「配置环境变量」。")
