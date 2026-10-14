@@ -362,19 +362,11 @@ QGroupBox::title {
 /* ---------------------------- 关于我们 ---------------------------- */
 #aboutLogo { padding: 2px; }
 
-#aboutPill {
-    background: #eef0ff;
-    color: #4f46e5;
-    border: 1px solid #dcdefb;
-    border-radius: 17px;
-    font-weight: 700;
-    font-size: 10pt;
-    qproperty-alignment: AlignCenter;
-}
-#aboutTitle    { font-size: 22.5pt; font-weight: 700; color: #171b26; }
-#aboutSubtitle { font-size: 11pt; color: #8a91a0; }
-#aboutHeading  { font-size: 14pt; font-weight: 700; color: #1f2430; }
-#aboutText     { font-size: 10.5pt; color: #5c6474; }
+#aboutTitle    { font-size: 17pt; font-weight: 700; color: #171b26; }
+#aboutSubtitle { font-size: 10.5pt; color: #8a91a0; }
+#aboutHeading  { font-size: 12.5pt; font-weight: 700; color: #1f2430; }
+#aboutText     { font-size: 10pt; color: #5c6474; line-height: 150%; }
+#aboutFoot     { font-size: 9pt; color: #9aa1b0; }
 
 /* ---------------------------- 工作空间 ---------------------------- */
 #dialogTip  { font-size: 10pt; color: #5c6474; }

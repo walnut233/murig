@@ -13,7 +13,7 @@ from PySide6.QtWidgets import (
     QPushButton, QScrollArea, QVBoxLayout, QWidget,
 )
 
-from ..core.constants import CATEGORIES, CATEGORY_ORDER, CONFIG_DIR
+from ..core.constants import APP_VERSION, CATEGORIES, CATEGORY_ORDER, CONFIG_DIR
 from ..core.mirrors import MIRRORS, PRESETS
 from ..core.settings import INSTALL
 from ..core.utils import human_size, open_in_file_manager
@@ -62,45 +62,40 @@ class AboutDialog(QDialog):
         outer.addWidget(scroll)
 
         v = QVBoxLayout(self._body)
-        v.setContentsMargins(36, 28, 36, 24)
-        v.setSpacing(10)
+        v.setContentsMargins(32, 24, 32, 18)
+        v.setSpacing(12)
         scroll.setWidget(self._body)
 
-        # 应用图标（与窗口 / 任务栏同一个 icon.ico）
+        # 头部：图标 + 应用名 / 副标题横排，压缩纵向空间
+        # （窗口标题已是「关于我们」，正文不再重复一行大标题）
+        header = QHBoxLayout()
+        header.setSpacing(14)
         logo = QLabel()
         logo.setObjectName("aboutLogo")
-        logo.setAlignment(Qt.AlignCenter)
         icon_file = icon_path()
         if icon_file.exists():
-            pm = QIcon(str(icon_file)).pixmap(72, 72)
+            pm = QIcon(str(icon_file)).pixmap(56, 56)
             if not pm.isNull():
                 logo.setPixmap(pm)
-        v.addWidget(logo, alignment=Qt.AlignHCenter)
-        v.addSpacing(6)
+        header.addWidget(logo, alignment=Qt.AlignVCenter)
 
-        # ABOUT US 胶囊
-        pill = QLabel("ABOUT US")
-        pill.setAlignment(Qt.AlignCenter)
-        pill.setFixedSize(120, 34)
-        pill.setObjectName("aboutPill")
-        v.addWidget(pill, alignment=Qt.AlignHCenter)
-
-        title = QLabel("关于我们")
-        title.setAlignment(Qt.AlignCenter)
+        head_col = QVBoxLayout()
+        head_col.setSpacing(2)
+        title = QLabel("MuRig")
         title.setObjectName("aboutTitle")
-        v.addWidget(title)
-
-        subtitle = QLabel("一群因为热爱而聚在一起的开源爱好者")
-        subtitle.setAlignment(Qt.AlignCenter)
+        head_col.addWidget(title)
+        subtitle = QLabel(f"一群因为热爱而聚在一起的开源爱好者 · {APP_VERSION}")
         subtitle.setObjectName("aboutSubtitle")
-        v.addWidget(subtitle)
-        v.addSpacing(8)
+        head_col.addWidget(subtitle)
+        header.addLayout(head_col)
+        header.addStretch(1)
+        v.addLayout(header)
 
         # 项目溯源：本工具由开源项目 MuRig 二次开发而来
         origin = QFrame()
         origin.setObjectName("aboutCard")
         ol = QVBoxLayout(origin)
-        ol.setContentsMargins(32, 22, 32, 20)
+        ol.setContentsMargins(26, 18, 26, 16)
         ol.setSpacing(8)
 
         origin_heading = QLabel("项目溯源")
@@ -131,7 +126,7 @@ class AboutDialog(QDialog):
         proj = QFrame()
         proj.setObjectName("aboutCard")
         pl = QVBoxLayout(proj)
-        pl.setContentsMargins(32, 22, 32, 20)
+        pl.setContentsMargins(26, 18, 26, 16)
         pl.setSpacing(8)
 
         proj_heading = QLabel("当前项目")
@@ -158,6 +153,12 @@ class AboutDialog(QDialog):
         pl.addWidget(proj_text)
 
         v.addWidget(proj)
+
+        # 底注：协议与溯源一句话
+        foot = QLabel("以 MIT 协议开源 · 基于开源项目 MuRig v1.2.0 二次开发")
+        foot.setAlignment(Qt.AlignCenter)
+        foot.setObjectName("aboutFoot")
+        v.addWidget(foot)
 
 
 # ---------------------------------------------------------------------------
