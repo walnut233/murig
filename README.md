@@ -269,7 +269,7 @@ murig/
 ├── main.py                             # 程序入口
 ├── requirements.txt                    # 依赖清单
 ├── murig.spec                          # PyInstaller 打包配置
-├── README.md / README_EN.md            # 中文 / 英文说明
+├── README.md                           # 项目说明（中文）
 ├── LICENSE                             # MIT 许可证
 ├── .github/workflows/
 │   └── build-and-release.yml           # 四产物自动构建 + 发布
