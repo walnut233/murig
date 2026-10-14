@@ -497,10 +497,18 @@ class ComponentCard(QFrame):
         width = max(self.width() - 80, 120)
         self.dir_label.setText(fm.elidedText(text, Qt.ElideMiddle, width))
         self.dir_label.setToolTip(text)
-        tip = f"{text}（可在「更多」里修改）"
+        # 「修改安装目录」菜单项的提示：说明当前目录来源与点击效果
+        # （该提示就显示在「更多」菜单里，不能再说「可在『更多』里修改」）
         if comp.key in WS.components:
-            tip += "；当前为自定义目录，可在「更多」里清除"
-        self.act_dir.setToolTip(tip)
+            self.act_dir.setToolTip(
+                f"当前为自定义安装目录：{target}\n"
+                "点击可改为其它目录；「清除自定义目录」可回退分类/全局设置。"
+            )
+        else:
+            self.act_dir.setToolTip(
+                f"当前安装目录：{target}（跟随分类/全局设置）\n"
+                "点击可为该组件单独指定其它目录，覆盖分类/全局设置。"
+            )
 
     def resizeEvent(self, event) -> None:
         super().resizeEvent(event)
