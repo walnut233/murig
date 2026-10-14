@@ -186,7 +186,7 @@ class WorkspaceDialog(QDialog):
         self._build_ui()
         screen = QApplication.primaryScreen()
         max_h = int(screen.availableGeometry().height() * 0.88) if screen else 860
-        self.resize(720, min(self._body.sizeHint().height() + 4, max_h))
+        self.resize(640, min(self._body.sizeHint().height() + 4, max_h))
 
     # ------------------------------------------------------------------
     def _build_ui(self) -> None:
@@ -218,7 +218,7 @@ class WorkspaceDialog(QDialog):
         g.setHorizontalSpacing(12)
         name = QLabel("所有组件")
         name.setObjectName("pathName")
-        name.setMinimumWidth(80)
+        name.setMinimumWidth(64)
         g.addWidget(name, 0, 0)
         self._global_label = QLabel()
         self._global_label.setObjectName("pathValue")
@@ -245,7 +245,7 @@ class WorkspaceDialog(QDialog):
         for row, cat in enumerate(CATEGORY_ORDER):
             name = QLabel(CATEGORIES[cat])
             name.setObjectName("pathName")
-            name.setMinimumWidth(80)
+            name.setMinimumWidth(64)
             g.addWidget(name, row, 0)
             lab = QLabel()
             lab.setObjectName("pathValue")
@@ -395,7 +395,7 @@ class WorkspaceDialog(QDialog):
         )
 
     @staticmethod
-    def _elide_mid(text: str, limit: int = 42) -> str:
+    def _elide_mid(text: str, limit: int = 30) -> str:
         """路径过长时中间省略，保住盘符与末级目录名。"""
         if len(text) <= limit:
             return text
