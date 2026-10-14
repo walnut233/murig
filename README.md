@@ -238,7 +238,7 @@ python main.py
 - **更换镜像**：设置弹窗里直接选通道或填自定义前缀（华为云 `repo.huaweicloud.com`、清华 TUNA `mirrors.tuna.tsinghua.edu.cn`、阿里云 `mirrors.aliyun.com`）
 - **更换图标**：替换 `assets/icons/*.svg`（关于 / 刷新 / 设置 / 文件夹），`murig/ui/icons.py` 会自动注入填充色
 - **本地打包**：`pip install pyinstaller && pyinstaller murig.spec --noconfirm --clean`
-- **自动发布**：推 tag（如 `git tag v1.2.0 && git push origin v1.2.0`），GitHub Actions 在 Windows / macOS (arm64 + x64) / Linux 上打包并自动创建 Release，产物见 [Releases](https://github.com/walnut233/murig/releases/latest)
+- **自动发布**：推 tag（如 `git tag v1.2.1 && git push origin v1.2.1`），GitHub Actions 在 Windows / macOS (arm64 + x64) / Linux 上打包并自动创建 Release，产物见 [Releases](https://github.com/walnut233/murig/releases/latest)
 
 ---
 

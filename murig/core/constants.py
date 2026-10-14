@@ -14,7 +14,7 @@ from typing import Dict, List
 APP_NAME = "MuRig - 编程开发环境自动装配小工具"
 
 
-APP_VERSION = "v1.2.0"
+APP_VERSION = "v1.2.1"
 
 
 CONFIG_DIR = Path.home() / ".env-tools"

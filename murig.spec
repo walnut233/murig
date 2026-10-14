@@ -10,11 +10,19 @@ PyInstaller spec file for MuRig.
     dist/murig.exe       # Windows 单可执行文件
     dist/murig.app       # macOS .app bundle
 """
+import re
 import sys
 from pathlib import Path
 
 APP_NAME = "murig"
 SPEC_DIR = Path(SPECPATH).resolve() if 'SPECPATH' in globals() else Path.cwd()
+
+# 版本号跟随 murig/core/constants.py 的 APP_VERSION（去掉前缀 v），
+# 避免 macOS bundle 里写的版本与界面显示的不一致
+_version = re.search(
+    r'APP_VERSION\s*=\s*"([^"]+)"',
+    (SPEC_DIR / "murig" / "core" / "constants.py").read_text(encoding="utf-8"),
+).group(1).lstrip("v")
 
 # 打进包里的静态资源（打赏二维码、应用截图、QSS 主题等）
 datas = [
@@ -110,8 +118,8 @@ if sys.platform == "darwin":
         info_plist={
             "CFBundleName": "MuRig",
             "CFBundleDisplayName": "MuRig - 编程开发环境自动装配小工具",
-            "CFBundleShortVersionString": "1.2.0",
-            "CFBundleVersion": "1.2.0",
+            "CFBundleShortVersionString": _version,
+            "CFBundleVersion": _version,
             "NSHighResolutionCapable": True,
             "LSMinimumSystemVersion": "10.13.0",
         },
