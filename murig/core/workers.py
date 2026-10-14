@@ -19,6 +19,7 @@ from .constants import CURRENT_OS
 from .http import get as http_get
 from .mirrors import DIRECT, MIRRORS, PROBE_URL
 from .resume import ResumeState
+from .updates import fetch_latest
 from .utils import ensure_dir, human_size
 
 
@@ -450,6 +451,23 @@ class MirrorProbeWorker(QThread):
 
     def run(self) -> None:  # noqa: D401
         self.done.emit(MIRRORS.probe(self.url or PROBE_URL))
+
+
+class UpdateCheckWorker(QThread):
+    """检查软件更新的后台线程（供设置界面「检查更新」使用）。"""
+
+    done = Signal(object)   # UpdateInfo
+    failed = Signal(str)    # 错误信息
+    note = Signal(str)      # 过程提示（如证书降级）
+
+    def __init__(self, parent: Optional[QObject] = None) -> None:
+        super().__init__(parent)
+
+    def run(self) -> None:  # noqa: D401
+        try:
+            self.done.emit(fetch_latest(on_note=self.note.emit))
+        except Exception as exc:  # pragma: no cover
+            self.failed.emit(str(exc))
 
 
 class CommandWorker(QThread):

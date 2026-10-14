@@ -17,6 +17,18 @@ APP_NAME = "MuRig - 编程开发环境自动装配小工具"
 APP_VERSION = "v1.2.1"
 
 
+# 本项目仓库地址（检查更新、关于我们共用）
+REPO_URL = "https://github.com/walnut233/murig"
+
+
+# 最新版发布页（供用户跳转下载）
+RELEASES_LATEST_URL = f"{REPO_URL}/releases/latest"
+
+
+# GitHub 最新 Release 接口：返回 tag_name / html_url / body / published_at
+RELEASES_API = "https://api.github.com/repos/walnut233/murig/releases/latest"
+
+
 CONFIG_DIR = Path.home() / ".env-tools"
 
 

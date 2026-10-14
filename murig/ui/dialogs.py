@@ -5,19 +5,23 @@ from __future__ import annotations
 
 from typing import Dict
 
-from PySide6.QtCore import Qt
-from PySide6.QtGui import QCursor, QIcon
+from PySide6.QtCore import QUrl, Qt
+from PySide6.QtGui import QCursor, QDesktopServices, QIcon
 from PySide6.QtWidgets import (
     QApplication, QComboBox, QDialog, QFileDialog, QFrame,
     QGridLayout, QGroupBox, QHBoxLayout, QLabel, QLineEdit, QMessageBox,
     QPushButton, QScrollArea, QVBoxLayout, QWidget,
 )
 
-from ..core.constants import APP_VERSION, CATEGORIES, CATEGORY_ORDER, CONFIG_DIR
+from ..core.constants import (
+    APP_VERSION, CATEGORIES, CATEGORY_ORDER, CONFIG_DIR, RELEASES_LATEST_URL,
+    REPO_URL,
+)
 from ..core.mirrors import MIRRORS, PRESETS
 from ..core.settings import INSTALL
+from ..core.updates import is_newer
 from ..core.utils import human_size, open_in_file_manager
-from ..core.workers import MirrorProbeWorker
+from ..core.workers import MirrorProbeWorker, UpdateCheckWorker
 from ..core.workspace import WS
 from ..resources import icon_path
 from .widgets import ToggleSwitch
@@ -135,20 +139,21 @@ class AboutDialog(QDialog):
 
         proj_text = QLabel(
             "本版本仓库："
-            '<a href="https://github.com/walnut233/murig" style="color:#5b5bd6;'
-            'text-decoration:none;font-weight:600;">github.com/walnut233/murig ↗</a>'
+            f'<a href="{REPO_URL}" style="color:#5b5bd6;'
+            f'text-decoration:none;font-weight:600;">{REPO_URL.removeprefix("https://")} ↗</a>'
             "<br><br>"
             "已打包的可执行文件在 "
-            '<a href="https://github.com/walnut233/murig/releases/latest" '
+            f'<a href="{RELEASES_LATEST_URL}" '
             'style="color:#5b5bd6;text-decoration:none;font-weight:600;">'
             "Releases 最新版 ↗</a>"
             " 获取（Windows / macOS / Linux 均由 GitHub Actions 自动构建）。"
             "<br><br>"
-            "提 Issue、看更新记录或参与改进，欢迎到仓库里来。"
+            "「设置 → 软件更新」可手动检查最新版本；提 Issue、看更新记录或参与改进，"
+            "欢迎到仓库里来。"
         )
         proj_text.setWordWrap(True)
         proj_text.setOpenExternalLinks(True)
-        proj_text.setToolTip("https://github.com/walnut233/murig")
+        proj_text.setToolTip(REPO_URL)
         proj_text.setObjectName("aboutText")
         pl.addWidget(proj_text)
 
@@ -354,6 +359,23 @@ class WorkspaceDialog(QDialog):
         self._refresh_cache_label()
         v.addWidget(grp)
 
+        # 软件更新：手动点「检查更新」查 GitHub 上的最新 Release
+        grp = QGroupBox("软件更新")
+        g = QGridLayout(grp)
+        g.setColumnStretch(0, 1)
+        self._update_label = QLabel()
+        self._update_label.setObjectName("pathValue")
+        self._update_label.setWordWrap(True)
+        self._update_label.setText(f"当前版本 {APP_VERSION}")
+        g.addWidget(self._update_label, 0, 0)
+        self._update_btn = QPushButton("检查更新")
+        self._update_btn.setObjectName("secondaryBtn")
+        self._update_btn.setCursor(QCursor(Qt.PointingHandCursor))
+        self._update_btn.setToolTip("连接 GitHub 查询本项目的最新发布版本（需要联网）")
+        self._update_btn.clicked.connect(self._start_update_check)
+        g.addWidget(self._update_btn, 0, 1)
+        v.addWidget(grp)
+
         v.addStretch(1)
         scroll.setWidget(body)
         outer.addWidget(scroll, stretch=1)
@@ -506,6 +528,59 @@ class WorkspaceDialog(QDialog):
                 "环境变量配置：安装后自动写入" if checked
                 else "环境变量配置：仅下载解压，需手动点「配置环境变量」",
             )
+
+    # ------------------------------------------------------------------
+    # 软件更新
+    # ------------------------------------------------------------------
+    def _start_update_check(self) -> None:
+        self._update_btn.setEnabled(False)
+        self._update_label.setText("正在检查更新…")
+        self._update_worker = UpdateCheckWorker(parent=self)
+        self._update_worker.done.connect(self._on_update_done)
+        self._update_worker.failed.connect(self._on_update_failed)
+        # 证书降级等过程提示转到主窗口日志
+        self._update_worker.note.connect(
+            lambda msg: self._log_cb and self._log_cb("info", msg))
+        self._update_worker.start()
+
+    def _on_update_done(self, info) -> None:
+        self._update_btn.setEnabled(True)
+        latest = info.version
+        if is_newer(latest):
+            self._update_label.setText(
+                f"发现新版本 {latest}（当前 {APP_VERSION}"
+                f"{'，发布于 ' + info.published if info.published else ''}）"
+            )
+            self._show_update_dialog(info)
+            if self._log_cb:
+                self._log_cb("ok", f"发现新版本 {latest}，可在发布页下载更新。")
+        else:
+            self._update_label.setText(f"已是最新版本（{APP_VERSION}）")
+            if self._log_cb:
+                self._log_cb("ok", f"检查更新：当前 {APP_VERSION} 已是最新版本。")
+
+    def _on_update_failed(self, reason: str) -> None:
+        self._update_btn.setEnabled(True)
+        self._update_label.setText(f"检查更新失败：{reason}")
+        if self._log_cb:
+            self._log_cb("warn", f"检查更新失败：{reason}")
+
+    def _show_update_dialog(self, info) -> None:
+        """有新版本时弹出说明，并提供「前往下载」跳转发布页。"""
+        box = QMessageBox(self)
+        box.setIcon(QMessageBox.Information)
+        box.setWindowTitle("发现新版本")
+        box.setText(f"新版本 {info.version} 已发布（当前 {APP_VERSION}）")
+        detail = info.notes or "（该版本未提供更新说明）"
+        if info.published:
+            detail = f"发布于 {info.published}\n\n{detail}"
+        box.setInformativeText(detail)
+        goto = box.addButton("前往下载", QMessageBox.AcceptRole)
+        box.addButton("以后再说", QMessageBox.RejectRole)
+        box.setDefaultButton(goto)
+        box.exec()
+        if box.clickedButton() is goto:
+            QDesktopServices.openUrl(QUrl(info.url or RELEASES_LATEST_URL))
 
     def _start_probe(self) -> None:
         self._probe_btn.setEnabled(False)
