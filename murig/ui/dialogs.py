@@ -340,6 +340,14 @@ class WorkspaceDialog(QDialog):
         )
         self._auto_env_box.toggled.connect(self._on_auto_env_changed)
         g.addWidget(self._auto_env_box, 0, 0)
+        self._auto_clean_box = ToggleSwitch("安装完成后自动清理下载的安装包")
+        self._auto_clean_box.setChecked(INSTALL.auto_clean)
+        self._auto_clean_box.setToolTip(
+            "组件解压安装完成后自动删除 downloads 目录里的压缩包；"
+            "关闭后保留安装包，便于重装或离线复用，可随时用下方「安装包清理」手动删除"
+        )
+        self._auto_clean_box.toggled.connect(self._on_auto_clean_changed)
+        g.addWidget(self._auto_clean_box, 1, 0)
         v.addWidget(grp)
 
         # 安装包清理
@@ -532,6 +540,16 @@ class WorkspaceDialog(QDialog):
     # ------------------------------------------------------------------
     # 软件更新
     # ------------------------------------------------------------------
+    def _on_auto_clean_changed(self, checked: bool) -> None:
+        INSTALL.auto_clean = bool(checked)
+        INSTALL.save()
+        if self._log_cb:
+            self._log_cb(
+                "ok",
+                "安装包：安装完成后自动清理" if checked
+                else "安装包：安装完成后保留，需手动清理",
+            )
+
     def _start_update_check(self) -> None:
         self._update_btn.setEnabled(False)
         self._update_label.setText("正在检查更新…")

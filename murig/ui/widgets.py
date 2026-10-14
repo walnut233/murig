@@ -891,9 +891,16 @@ class ComponentCard(QFrame):
             for note in self.component.post_notes:
                 self._log("warn", note)
 
-            # 安装/解压成功后，下载的安装包不再需要，自动清理腾出磁盘空间
+            # 安装/解压成功后，下载的安装包不再需要，可自动清理腾出磁盘空间
             # （bin/exe 类在安装时已 move 走，不存在残留；失败时保留便于重试）
-            if path.exists():
+            if not INSTALL.auto_clean:
+                if path.exists():
+                    self._log(
+                        "info",
+                        f"已保留安装包：{path}"
+                        "（可在「设置」里开启自动清理，或用「安装包清理」一键删除）",
+                    )
+            elif path.exists():
                 try:
                     size = path.stat().st_size
                     path.unlink()

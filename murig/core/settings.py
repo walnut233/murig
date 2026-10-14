@@ -24,6 +24,8 @@ class InstallSettings:
     def __init__(self) -> None:
         # 安装完成后自动配置环境变量；关闭时仅解压，配置留给用户决定
         self.auto_env: bool = False
+        # 安装成功后自动清理下载的安装包；关闭时保留，便于重装 / 离线复用
+        self.auto_clean: bool = True
 
     # ------------------------------------------------------------------
     @classmethod
@@ -34,12 +36,18 @@ class InstallSettings:
                 data = json.loads(SETTINGS_FILE.read_text(encoding="utf-8"))
                 d = data.get("install") or {}
                 s.auto_env = bool(d.get("auto_env"))
+                # 缺省为 True：老版本一直是安装后自动清理
+                s.auto_clean = bool(d.get("auto_clean", True))
         except Exception:
             pass
         # 环境变量方便临时对比：MURIG_AUTO_ENV=1 打开
         env = os.environ.get("MURIG_AUTO_ENV")
         if env:
             s.auto_env = env.strip().lower() in ("1", "true", "yes", "on")
+        # MURIG_AUTO_CLEAN=0 关闭自动清理
+        env_clean = os.environ.get("MURIG_AUTO_CLEAN")
+        if env_clean:
+            s.auto_clean = env_clean.strip().lower() in ("1", "true", "yes", "on")
         return s
 
     def save(self) -> None:
@@ -51,7 +59,10 @@ class InstallSettings:
                     data = json.loads(SETTINGS_FILE.read_text(encoding="utf-8"))
                 except Exception:
                     data = {}
-            data["install"] = {"auto_env": self.auto_env}
+            data["install"] = {
+                "auto_env": self.auto_env,
+                "auto_clean": self.auto_clean,
+            }
             SETTINGS_FILE.write_text(
                 json.dumps(data, indent=2, ensure_ascii=False), encoding="utf-8")
         except Exception:
