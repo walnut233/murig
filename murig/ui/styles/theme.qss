@@ -224,29 +224,29 @@ QPushButton#primaryBtn:disabled { background: #cbd5e1; color: #f1f5f9; }
 
 QPushButton#secondaryBtn {
     background: #ffffff;
-    color: #4f46e5;
-    border: 1px solid #c7d2fe;
+    color: #374151;
+    border: 1px solid #d3dae4;
     padding: 6px 16px;
     border-radius: 10px;
     font-weight: 700;
     font-size: 10pt;
 }
-QPushButton#secondaryBtn:hover { background: #f0f2ff; border-color: #4f46e5; }
-QPushButton#secondaryBtn:pressed { background: #e0e7ff; }
+QPushButton#secondaryBtn:hover { background: #f3f5f8; border-color: #8f9aa8; }
+QPushButton#secondaryBtn:pressed { background: #e8ebf0; }
 QPushButton#secondaryBtn:disabled { color: #b6bec9; border-color: #e2e7f0; background: #f8fafc; }
 
 /* 设置弹窗里的行内小按钮（浏览/重置/打开/立即清理/检查更新） */
 QPushButton#miniBtn {
     background: #ffffff;
-    color: #4f46e5;
-    border: 1px solid #c7d2fe;
+    color: #374151;
+    border: 1px solid #d3dae4;
     padding: 2px 12px;
     border-radius: 8px;
     font-weight: 600;
     font-size: 9.5pt;
 }
-QPushButton#miniBtn:hover { background: #f0f2ff; border-color: #4f46e5; }
-QPushButton#miniBtn:pressed { background: #e0e7ff; }
+QPushButton#miniBtn:hover { background: #f3f5f8; border-color: #8f9aa8; }
+QPushButton#miniBtn:pressed { background: #e8ebf0; }
 QPushButton#miniBtn:disabled { color: #b6bec9; border-color: #e2e7f0; background: #f8fafc; }
 
 QPushButton#dangerBtn {
