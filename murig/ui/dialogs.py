@@ -127,6 +127,38 @@ class AboutDialog(QDialog):
 
         v.addWidget(origin)
 
+        # 当前项目：仓库地址与发行版下载入口
+        proj = QFrame()
+        proj.setObjectName("aboutCard")
+        pl = QVBoxLayout(proj)
+        pl.setContentsMargins(32, 22, 32, 20)
+        pl.setSpacing(8)
+
+        proj_heading = QLabel("当前项目")
+        proj_heading.setObjectName("aboutHeading")
+        pl.addWidget(proj_heading)
+
+        proj_text = QLabel(
+            "本版本仓库："
+            '<a href="https://github.com/walnut233/murig" style="color:#5b5bd6;'
+            'text-decoration:none;font-weight:600;">github.com/walnut233/murig ↗</a>'
+            "<br><br>"
+            "已打包的可执行文件在 "
+            '<a href="https://github.com/walnut233/murig/releases/latest" '
+            'style="color:#5b5bd6;text-decoration:none;font-weight:600;">'
+            "Releases 最新版 ↗</a>"
+            " 获取（Windows / macOS / Linux 均由 GitHub Actions 自动构建）。"
+            "<br><br>"
+            "提 Issue、看更新记录或参与改进，欢迎到仓库里来。"
+        )
+        proj_text.setWordWrap(True)
+        proj_text.setOpenExternalLinks(True)
+        proj_text.setToolTip("https://github.com/walnut233/murig")
+        proj_text.setObjectName("aboutText")
+        pl.addWidget(proj_text)
+
+        v.addWidget(proj)
+
 
 # ---------------------------------------------------------------------------
 # 设置对话框

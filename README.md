@@ -1,7 +1,7 @@
 # MuRig · 编程开发环境自动装配小工具
 
 <p align="center">
-  <img src="assets/murig.png" alt="MuRig 主界面" width="760"/>
+  <img src="assets/icon.ico" alt="MuRig 主界面" width="100"/>
 </p>
 
 <p align="center">
@@ -25,7 +25,6 @@
 
 原项目由 [沐编程](https://nav.qqmu.com) 开源（MIT 协议），已实现"下载 → 解压 → 环境变量配置"的完整链路。本仓库在其 v1.2.0 基础上进行二次开发：沿用原有核心能力，**新增并修复了部分功能，让日常使用更顺手**，同时保留原作者的署名与授权。
 
-应用内 **「关于我们」** 弹窗同样标注了这段溯源信息（顶部展示应用图标与项目溯源说明，原作者的"关于我们"内容以弱化卡片形式保留）。
 
 ### ✨ 相对 MuRig v1.2.0 的改动
 
@@ -44,16 +43,16 @@
 
 ## 📥 下载即用（推荐）
 
-> **不需要 Python 环境，不需要克隆源码，双击即可运行。** 到 **[原项目 Releases 页面](https://github.com/vfaner/murig/releases/latest)** 下载对应系统的版本：
+> **不需要 Python 环境，不需要克隆源码，双击即可运行。** 到 **[本项目 Releases 页面](https://github.com/walnut233/murig/releases/latest)** 下载对应系统的版本（Windows / macOS / Linux 三平台产物均由 GitHub Actions 随 tag 自动构建并发布）：
 
 | 系统 | 下载文件 | 说明 |
 |------|----------|------|
-| 🪟 **Windows** | [`murig.exe`](https://github.com/vfaner/murig/releases/latest/download/murig.exe) | 双击运行，无需安装 |
-| 🍎 **macOS (Apple Silicon)** | [`murig-macos-arm64.zip`](https://github.com/vfaner/murig/releases/latest/download/murig-macos-arm64.zip) | 解压后双击 `murig.app` |
-| 🍎 **macOS (Intel 芯片)** | [`murig-macos-x64.zip`](https://github.com/vfaner/murig/releases/latest/download/murig-macos-x64.zip) | 解压后双击 `murig.app` |
-| 🐧 **Linux (x64)** | [`murig-linux-x64`](https://github.com/vfaner/murig/releases/latest/download/murig-linux-x64) | `chmod +x` 后直接运行 |
+| 🪟 **Windows** | [`murig.exe`](https://github.com/walnut233/murig/releases/latest/download/murig.exe) | 双击运行，无需安装 |
+| 🍎 **macOS (Apple Silicon)** | [`murig-macos-arm64.zip`](https://github.com/walnut233/murig/releases/latest/download/murig-macos-arm64.zip) | 解压后双击 `murig.app` |
+| 🍎 **macOS (Intel 芯片)** | [`murig-macos-x64.zip`](https://github.com/walnut233/murig/releases/latest/download/murig-macos-x64.zip) | 解压后双击 `murig.app` |
+| 🐧 **Linux (x64)** | [`murig-linux-x64`](https://github.com/walnut233/murig/releases/latest/download/murig-linux-x64) | `chmod +x` 后直接运行 |
 
-> 上表为原项目的发布产物；使用本二次开发版本请直接克隆本仓库运行源码，或用 PyInstaller 自行打包（见「自定义与打包」章节）。
+> 想跑源码或用 PyInstaller 自行打包，见下方「自定义与打包」章节。
 
 首次启动提示：
 
@@ -166,25 +165,6 @@ tools/
 
 ---
 
-## 📸 截图预览
-
-<p align="center">
-  <img src="assets/murig_db_version.png" alt="版本下拉框" width="760"/><br/>
-  <sub>版本下拉框：版本列表实时抓自官方源，可键入关键字过滤</sub>
-</p>
-
-<p align="center">
-  <img src="assets/murig_work.png" alt="设置弹窗" width="760"/><br/>
-  <sub>设置弹窗：安装目录 / 下载通道 / 安装选项 / 安装包清理</sub>
-</p>
-
-<p align="center">
-  <img src="assets/murig_about.png" alt="关于我们" width="760"/><br/>
-  <sub>关于我们：项目溯源（基于 MuRig v1.2.0）与原作者联系方式</sub>
-</p>
-
----
-
 ## 🚀 快速开始（源码运行）
 
 ```bash
@@ -258,7 +238,7 @@ python main.py
 - **更换镜像**：设置弹窗里直接选通道或填自定义前缀（华为云 `repo.huaweicloud.com`、清华 TUNA `mirrors.tuna.tsinghua.edu.cn`、阿里云 `mirrors.aliyun.com`）
 - **更换图标**：替换 `assets/icons/*.svg`（关于 / 刷新 / 设置 / 文件夹），`murig/ui/icons.py` 会自动注入填充色
 - **本地打包**：`pip install pyinstaller && pyinstaller murig.spec --noconfirm --clean`
-- **自动发布**：推 tag（如 `git tag v1.2.0 && git push origin v1.2.0`），GitHub Actions 在 Windows / macOS (arm64 + x64) / Linux 上打包并自动创建 Release
+- **自动发布**：推 tag（如 `git tag v1.2.0 && git push origin v1.2.0`），GitHub Actions 在 Windows / macOS (arm64 + x64) / Linux 上打包并自动创建 Release，产物见 [Releases](https://github.com/walnut233/murig/releases/latest)
 
 ---
 
