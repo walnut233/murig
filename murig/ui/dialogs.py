@@ -186,6 +186,10 @@ class WorkspaceDialog(QDialog):
         self._build_ui()
         screen = QApplication.primaryScreen()
         max_h = int(screen.availableGeometry().height() * 0.88) if screen else 860
+        # 不超过主窗口的纵向长度：设置弹窗比主应用还高会显得失衡
+        parent = self.parent()
+        if parent is not None and parent.height() > 200:
+            max_h = min(max_h, parent.height())
         self.resize(640, min(self._body.sizeHint().height() + 4, max_h))
 
     # ------------------------------------------------------------------
