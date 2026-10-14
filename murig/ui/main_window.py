@@ -9,10 +9,10 @@ from pathlib import Path
 from typing import Dict, List, Optional
 
 from PySide6.QtCore import QEvent, QPoint, QSize, Qt
-from PySide6.QtGui import QCursor
+from PySide6.QtGui import QAction, QCursor
 from PySide6.QtWidgets import (
  QDialog, QFrame, QHBoxLayout,
-    QLabel, QLineEdit, QMainWindow, QPushButton, QScrollArea,
+    QLabel, QLineEdit, QMainWindow, QMenu, QPushButton, QScrollArea,
     QSplitter, QTextEdit, QVBoxLayout, QWidget,
 )
 
@@ -194,16 +194,23 @@ class MainWindow(QMainWindow):
         fb.setContentsMargins(18, 8, 18, 8)
         fb.setSpacing(8)
 
-        self.category_buttons: Dict[str, QPushButton] = {}
+        # 分类筛选：一排胶囊合并为「分类：全部」下拉菜单，点开选择分类
+        self.btn_category = QPushButton("分类：全部")
+        self.btn_category.setObjectName("categoryChip")
+        self.btn_category.setCursor(QCursor(Qt.PointingHandCursor))
+        self.btn_category.setFixedHeight(34)
+        self.btn_category.setToolTip("选择要显示的组件分类")
+        self.category_menu = QMenu(self.btn_category)
+        self.category_actions: Dict[str, QAction] = {}
         for cat in ["all", *CATEGORY_ORDER]:
-            chip = QPushButton(CATEGORIES[cat])
-            chip.setObjectName("categoryChip")
-            chip.setCheckable(True)
-            chip.setChecked(cat == "all")
-            chip.setCursor(QCursor(Qt.PointingHandCursor))
-            chip.clicked.connect(lambda _=False, c=cat: self._on_category_chosen(c))
-            fb.addWidget(chip)
-            self.category_buttons[cat] = chip
+            act = QAction(CATEGORIES[cat], self.category_menu)
+            act.setCheckable(True)
+            act.setChecked(cat == "all")
+            act.triggered.connect(lambda _=False, c=cat: self._on_category_chosen(c))
+            self.category_menu.addAction(act)
+            self.category_actions[cat] = act
+        self.btn_category.setMenu(self.category_menu)
+        fb.addWidget(self.btn_category)
         fb.addSpacing(10)
 
         self.search_box = QLineEdit()
@@ -347,10 +354,11 @@ class MainWindow(QMainWindow):
     # 分类筛选 & 搜索
     # ------------------------------------------------------------------
     def _on_category_chosen(self, cat: str) -> None:
-        """点击分类胶囊：更新选中态并重新过滤卡片。"""
+        """选择分类：更新下拉按钮文字与勾选态并重新过滤卡片。"""
         self._current_category = cat
-        for c, chip in self.category_buttons.items():
-            chip.setChecked(c == cat)
+        for c, act in self.category_actions.items():
+            act.setChecked(c == cat)
+        self.btn_category.setText(f"分类：{CATEGORIES[cat]}")
         self._apply_filter()
 
     def _match_keyword(self, comp: Component, keyword: str) -> bool:
