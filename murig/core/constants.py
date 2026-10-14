@@ -26,7 +26,12 @@ RELEASES_LATEST_URL = f"{REPO_URL}/releases/latest"
 
 
 # GitHub 最新 Release 接口：返回 tag_name / html_url / body / published_at
+# （未认证请求限流很严，60 次/小时/IP，失败时回退到下面的订阅源）
 RELEASES_API = "https://api.github.com/repos/walnut233/murig/releases/latest"
+
+
+# Releases 订阅源：不受上面那条接口的限流约束，作为兜底来源
+RELEASES_ATOM = f"{REPO_URL}/releases.atom"
 
 
 CONFIG_DIR = Path.home() / ".env-tools"
