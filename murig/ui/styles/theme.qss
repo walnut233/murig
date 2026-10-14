@@ -235,6 +235,20 @@ QPushButton#secondaryBtn:hover { background: #f0f2ff; border-color: #4f46e5; }
 QPushButton#secondaryBtn:pressed { background: #e0e7ff; }
 QPushButton#secondaryBtn:disabled { color: #b6bec9; border-color: #e2e7f0; background: #f8fafc; }
 
+/* 设置弹窗里的行内小按钮（浏览/重置/打开/立即清理/检查更新） */
+QPushButton#miniBtn {
+    background: #ffffff;
+    color: #4f46e5;
+    border: 1px solid #c7d2fe;
+    padding: 2px 12px;
+    border-radius: 8px;
+    font-weight: 600;
+    font-size: 9.5pt;
+}
+QPushButton#miniBtn:hover { background: #f0f2ff; border-color: #4f46e5; }
+QPushButton#miniBtn:pressed { background: #e0e7ff; }
+QPushButton#miniBtn:disabled { color: #b6bec9; border-color: #e2e7f0; background: #f8fafc; }
+
 QPushButton#dangerBtn {
     background: #ffffff;
     color: #dc2626;
@@ -346,8 +360,8 @@ QGroupBox {
     border: 1px solid #e6eaf2;
     border-radius: 12px;
     /* margin-top 必须大于标题行高，否则标题文字压进卡片圆角边框 */
-    margin-top: 26px;
-    padding: 16px 12px 12px;
+    margin-top: 20px;
+    padding: 10px 12px 10px;
     font-weight: 700;
     color: #374151;
 }
@@ -355,7 +369,7 @@ QGroupBox::title {
     subcontrol-origin: margin;
     subcontrol-position: top left;
     left: 14px;
-    top: 2px;
+    top: 0px;
     padding: 0 6px;
 }
 

@@ -186,13 +186,13 @@ class WorkspaceDialog(QDialog):
         self._build_ui()
         screen = QApplication.primaryScreen()
         max_h = int(screen.availableGeometry().height() * 0.88) if screen else 860
-        self.resize(780, min(self._body.sizeHint().height() + 4, max_h))
+        self.resize(720, min(self._body.sizeHint().height() + 4, max_h))
 
     # ------------------------------------------------------------------
     def _build_ui(self) -> None:
         outer = QVBoxLayout(self)
-        outer.setContentsMargins(24, 20, 24, 18)
-        outer.setSpacing(12)
+        outer.setContentsMargins(20, 16, 20, 14)
+        outer.setSpacing(10)
 
         tip = QLabel(
             "安装位置解析优先级：组件自定义 ＞ 分类工作空间 ＞ 全局默认 ＞ 内置默认目录。"
@@ -209,7 +209,7 @@ class WorkspaceDialog(QDialog):
         self._body = body
         v = QVBoxLayout(body)
         v.setContentsMargins(0, 0, 0, 0)
-        v.setSpacing(14)
+        v.setSpacing(10)
 
         # 全局默认
         grp = QGroupBox("全局默认工作空间")
@@ -239,8 +239,8 @@ class WorkspaceDialog(QDialog):
         grp = QGroupBox("分类工作空间（留空表示跟随全局）")
         g = QGridLayout(grp)
         g.setColumnStretch(1, 1)
-        g.setHorizontalSpacing(12)
-        g.setVerticalSpacing(10)
+        g.setHorizontalSpacing(8)
+        g.setVerticalSpacing(6)
         self._cat_labels: Dict[str, QLabel] = {}
         for row, cat in enumerate(CATEGORY_ORDER):
             name = QLabel(CATEGORIES[cat])
@@ -271,8 +271,9 @@ class WorkspaceDialog(QDialog):
                     WS.categories.get(c) or WS.global_ws or CONFIG_DIR)), row, 4)
         v.addWidget(grp)
 
-        # 组件自定义覆盖
+        # 组件自定义覆盖：没有自定义目录时整组隐藏，不占空间
         grp = QGroupBox("组件自定义目录（在组件卡片点文件夹按钮设置，此处可清除）")
+        self._override_grp = grp
         self._override_box = QVBoxLayout(grp)
         self._override_box.setSpacing(6)
         v.addWidget(grp)
@@ -293,10 +294,7 @@ class WorkspaceDialog(QDialog):
         self._mirror_combo.currentIndexChanged.connect(self._on_mirror_changed)
         g.addWidget(self._mirror_combo, 0, 1)
 
-        self._probe_btn = QPushButton("测速")
-        self._probe_btn.setObjectName("secondaryBtn")
-        self._probe_btn.setCursor(QCursor(Qt.PointingHandCursor))
-        self._probe_btn.clicked.connect(self._start_probe)
+        self._probe_btn = self._mini_btn("测速", "对各下载通道抽样测速", self._start_probe)
         g.addWidget(self._probe_btn, 0, 2)
 
         self._custom_edit = QLineEdit(MIRRORS.custom)
@@ -327,10 +325,12 @@ class WorkspaceDialog(QDialog):
         g.addWidget(self._probe_label, 2, 1, 1, 2)
         v.addWidget(grp)
 
-        # 安装选项
-        grp = QGroupBox("安装选项")
+        # 安装与更新：行为开关 + 安装包清理 + 版本检查合并为一组，减少卡片占高
+        grp = QGroupBox("安装与更新")
         g = QGridLayout(grp)
         g.setColumnStretch(0, 1)
+        g.setHorizontalSpacing(12)
+        g.setVerticalSpacing(8)
         # 滑动开关：默认复选框样式太淡，看不出是可交互的选项
         self._auto_env_box = ToggleSwitch("安装完成后自动配置环境变量")
         self._auto_env_box.setChecked(INSTALL.auto_env)
@@ -344,44 +344,32 @@ class WorkspaceDialog(QDialog):
         self._auto_clean_box.setChecked(INSTALL.auto_clean)
         self._auto_clean_box.setToolTip(
             "组件解压安装完成后自动删除 downloads 目录里的压缩包；"
-            "关闭后保留安装包，便于重装或离线复用，可随时用下方「安装包清理」手动删除"
+            "关闭后保留安装包，便于重装或离线复用，可随时用「立即清理」手动删除"
         )
         self._auto_clean_box.toggled.connect(self._on_auto_clean_changed)
         g.addWidget(self._auto_clean_box, 1, 0)
-        v.addWidget(grp)
 
         # 安装包清理
-        grp = QGroupBox("安装包清理（组件解压安装后压缩包即不再需要）")
-        g = QGridLayout(grp)
-        g.setColumnStretch(0, 1)
         self._cache_label = QLabel()
         self._cache_label.setObjectName("pathValue")
         self._cache_label.setWordWrap(True)
-        g.addWidget(self._cache_label, 0, 0)
-        self._clean_btn = QPushButton("立即清理")
-        self._clean_btn.setObjectName("secondaryBtn")
-        self._clean_btn.setCursor(QCursor(Qt.PointingHandCursor))
-        self._clean_btn.setToolTip("删除所有工作空间 downloads 目录里的安装包，已安装组件不受影响")
-        self._clean_btn.clicked.connect(self._clean_downloads)
-        g.addWidget(self._clean_btn, 0, 1)
+        g.addWidget(self._cache_label, 2, 0)
+        self._clean_btn = self._mini_btn(
+            "立即清理", "删除所有工作空间 downloads 目录里的安装包，已安装组件不受影响",
+            self._clean_downloads)
+        g.addWidget(self._clean_btn, 2, 1)
         self._refresh_cache_label()
-        v.addWidget(grp)
 
         # 软件更新：手动点「检查更新」查 GitHub 上的最新 Release
-        grp = QGroupBox("软件更新")
-        g = QGridLayout(grp)
-        g.setColumnStretch(0, 1)
         self._update_label = QLabel()
         self._update_label.setObjectName("pathValue")
         self._update_label.setWordWrap(True)
         self._update_label.setText(f"当前版本 {APP_VERSION}")
-        g.addWidget(self._update_label, 0, 0)
-        self._update_btn = QPushButton("检查更新")
-        self._update_btn.setObjectName("secondaryBtn")
-        self._update_btn.setCursor(QCursor(Qt.PointingHandCursor))
-        self._update_btn.setToolTip("连接 GitHub 查询本项目的最新发布版本（需要联网）")
-        self._update_btn.clicked.connect(self._start_update_check)
-        g.addWidget(self._update_btn, 0, 1)
+        g.addWidget(self._update_label, 3, 0)
+        self._update_btn = self._mini_btn(
+            "检查更新", "连接 GitHub 查询本项目的最新发布版本（需要联网）",
+            self._start_update_check)
+        g.addWidget(self._update_btn, 3, 1)
         v.addWidget(grp)
 
         v.addStretch(1)
@@ -416,9 +404,10 @@ class WorkspaceDialog(QDialog):
         return f"{text[:head]}…{text[len(text) - tail:]}"
 
     def _mini_btn(self, text: str, tip: str, cb) -> QPushButton:
-        """紧凑的小按钮（浏览/重置/打开），避免行内按钮过宽挤爆布局。"""
+        """紧凑的小按钮（浏览/重置/打开等），比 secondaryBtn 更矮更窄。"""
         btn = QPushButton(text)
-        btn.setObjectName("secondaryBtn")
+        btn.setObjectName("miniBtn")
+        btn.setFixedHeight(28)
         btn.setCursor(QCursor(Qt.PointingHandCursor))
         btn.setToolTip(tip)
         btn.clicked.connect(cb)
@@ -621,6 +610,8 @@ class WorkspaceDialog(QDialog):
                        WS.global_ws or f"内置默认（{CONFIG_DIR}）")
         for cat, lab in self._cat_labels.items():
             self._set_path(lab, WS.categories.get(cat) or "跟随全局")
+        # 没有任何组件自定义目录时，整组隐藏，不占纵向空间
+        self._override_grp.setVisible(bool(WS.components))
         # 重建覆盖清单
         while self._override_box.count():
             item = self._override_box.takeAt(0)
